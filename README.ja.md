@@ -75,25 +75,25 @@ jobs:
           datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
           datadog-app-key: ${{ secrets.DATADOG_APP_KEY }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          datadog-site: 'datadoghq.com'  # オプション: us5.datadoghq.com など
+          datadog-site: 'datadoghq.com' # オプション: us5.datadoghq.com など
           query: '@type:error @service:frontend-app'
           date-from: 'now-1h'
           date-to: 'now'
-          labels: 'error,frontend,monitoring'  # オプション
+          labels: 'error,frontend,monitoring' # オプション
 ```
 
 ## 📖 設定オプション
 
-| パラメータ | 必須 | デフォルト | 説明 |
-|-----------|------|---------|------------|
-| `datadog-api-key` | ✅ | - | Datadog API キー |
-| `datadog-app-key` | ✅ | - | Datadog アプリケーションキー |
-| `github-token` | ✅ | - | GitHub トークン |
-| `datadog-site` | ❌ | `datadoghq.com` | Datadog サイト（us5.datadoghq.com など） |
-| `query` | ❌ | `@type:error` | Datadog クエリフィルター |
-| `date-from` | ❌ | `now-1h` | 開始日時 |
-| `date-to` | ❌ | `now` | 終了日時 |
-| `labels` | ❌ | `datadog-error` | Issue に追加するラベル（カンマ区切り） |
+| パラメータ        | 必須 | デフォルト      | 説明                                     |
+| ----------------- | ---- | --------------- | ---------------------------------------- |
+| `datadog-api-key` | ✅   | -               | Datadog API キー                         |
+| `datadog-app-key` | ✅   | -               | Datadog アプリケーションキー             |
+| `github-token`    | ✅   | -               | GitHub トークン                          |
+| `datadog-site`    | ❌   | `datadoghq.com` | Datadog サイト（us5.datadoghq.com など） |
+| `query`           | ❌   | `@type:error`   | Datadog クエリフィルター                 |
+| `date-from`       | ❌   | `now-1h`        | 開始日時                                 |
+| `date-to`         | ❌   | `now`           | 終了日時                                 |
+| `labels`          | ❌   | `datadog-error` | Issue に追加するラベル（カンマ区切り）   |
 
 ## 🔍 クエリ例
 
@@ -129,11 +129,13 @@ query: '@type:error @session.has_replay:true'
 ## 🏷️ 生成される Issue
 
 ### Issue タイトル例
+
 ```
 [Frontend] TypeError: Cannot read property 'value' of null
 ```
 
 ### Issue 内容
+
 - エラーハッシュ（重複検出用）
 - エラー詳細情報
 - 影響を受けたユーザー数
@@ -156,15 +158,18 @@ query: '@type:error @session.has_replay:true'
 ### よくある問題
 
 **1. API 認証エラー**
+
 - API キーとアプリケーションキーが正しく設定されているか確認
 - Datadog サイトが正しく指定されているか確認
 
 **2. エラーが見つからない**
+
 - クエリパラメータを確認
 - 日時範囲を調整
 - Datadog でエラーが実際に発生しているか確認
 
 **3. Issue が重複して作成される**
+
 - エラーフィンガープリンティングが正常に動作しているか確認
 - 既存の Issue のラベルやタイトルが変更されていないか確認
 
