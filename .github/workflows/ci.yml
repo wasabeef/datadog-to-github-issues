@@ -34,9 +34,18 @@ jobs:
       - name: Build
         run: bun run build
 
+      - name: Copy dist files to action directories
+        run: |
+          mkdir -p rum/dist monitor/dist
+          cp packages/rum-action/dist/* rum/dist/
+          cp packages/monitor-action/dist/* monitor/dist/
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: dist-${{ github.sha }}
-          path: dist/
+          path: |
+            packages/*/dist/
+            rum/dist/
+            monitor/dist/
           retention-days: 30

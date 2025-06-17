@@ -10,6 +10,15 @@
 - Node.js 18+ (compatible with Bun)
 - Git
 
+### Quick Start
+
+```bash
+git clone https://github.com/wasabeef/datadog-to-github-issues.git
+cd datadog-to-github-issues
+bun install
+bun run test
+```
+
 ### Development Environment Setup
 
 1. **Clone the repository**:
@@ -257,6 +266,60 @@ To maintain a respectful environment for everyone participating:
 - Respect diversity
 - Communicate kindly and politely
 - Foster an environment for learning and growth
+
+## 📦 Development & Testing Builds
+
+### Local Development
+
+```bash
+# Run tests
+bun run test
+
+# Build and check output
+bun run build:check
+
+# Build and see git changes
+bun run build:dev
+```
+
+### GitHub CI/CD
+
+This project uses a streamlined workflow for different scenarios:
+
+- **`ci.yml`**: Runs on every push/PR to main - tests, linting, build, and artifacts upload
+- **`build-preview.yml`**: Runs on PRs - creates downloadable build artifacts and posts usage instructions
+- **`auto-build.yml`**: Runs on ANY feature branch - auto-commits dist/ changes for testing
+- **`release.yml`**: Unified release workflow - creates tags and GitHub releases (manual or auto)
+- **`test.yml`**: Manual testing only - runs actual Datadog API integration tests
+
+### Simple Development Flow
+
+1. **Create any branch**: `feat-xxx`, `fix-yyy`, `refactor-zzz` - any name works
+2. **Push to branch**: `auto-build.yml` automatically builds and commits dist/
+3. **Create PR**: `build-preview.yml` shows usage instructions and download links
+4. **Test the branch**: Use `@your-branch-name` in other repositories
+5. **Merge to main**: After approval and testing
+6. **Create release**: Manually run `release.yml` workflow to create tag and release
+7. **Done**: Single workflow handles everything!
+
+### Using Development Branches in Other Repositories
+
+When testing unreleased features, you can reference any branch in your workflows:
+
+```yaml
+# Use ANY development branch (auto-builds dist/)
+- uses: wasabeef/datadog-to-github-issues@feat-new-feature
+- uses: wasabeef/datadog-to-github-issues@fix-bug-123
+- uses: wasabeef/datadog-to-github-issues@refactor-core
+
+# Use a specific commit SHA
+- uses: wasabeef/datadog-to-github-issues@a1b2c3d4e5f6789
+
+# Use a PR for testing
+- uses: wasabeef/datadog-to-github-issues@refs/pull/42/head
+```
+
+**The PR comment will show you the exact usage instructions for your branch!**
 
 ## 🎯 Development Roadmap
 

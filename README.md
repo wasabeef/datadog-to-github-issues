@@ -7,18 +7,20 @@
   <a href="README.ja.md">日本語版</a>
 </p>
 
-A GitHub Action that automatically creates GitHub Issues from Datadog RUM (Real User Monitoring) errors. This helps teams track and manage frontend errors detected by Datadog directly within their GitHub workflow.
+A collection of GitHub Actions that integrate Datadog with GitHub Issues:
+
+- **RUM Action**: Creates issues from Datadog RUM (Real User Monitoring) errors
+- **Monitor Action**: Creates issues from Datadog Monitor alerts (coming soon)
+
+This helps teams track and manage errors and alerts from Datadog directly within their GitHub workflow.
 
 ## 🚀 Features
 
-- **Automatic Error Detection**: Fetches errors from Datadog RUM API
-- **Smart Grouping**: Groups similar errors using fingerprinting
-- **Rich Error Context**: Includes stack traces, user impact, browser info, and more
-- **Issue Updates**: Updates existing issues when errors recur
-- **Auto-Reopen**: Reopens closed issues if errors resurface
-- **Security**: Masks sensitive data (emails, IPs, tokens)
-- **Session Replay Links**: Direct links to Datadog session replays
-- **Flexible Labeling**: Customizable labels for organization
+- **Automatic Error Detection**: Fetches and creates GitHub Issues from Datadog RUM errors
+- **Smart Grouping & Updates**: Groups similar errors and updates existing issues when they recur
+- **Rich Context**: Includes stack traces, user impact, browser distribution, and session replay links
+- **Security & Privacy**: Automatically masks sensitive data (emails, IPs, tokens)
+- **Flexible Configuration**: Customizable labels, multiple languages (EN/JP), and conditional labeling
 
 ## 💡 Motivation
 
@@ -62,15 +64,16 @@ Frontend errors can happen at any time and often go unnoticed until users compla
 
 ### Step 3: Create Workflow File
 
-Create `.github/workflows/datadog-to-github-issues.yml` in your repository:
+#### For RUM Error Monitoring
+
+Create `.github/workflows/datadog-rum-errors.yml` in your repository:
 
 ```yaml
 name: Sync Datadog Errors
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # Every 6 hours
-  workflow_dispatch: # Allow manual runs
+    - cron: '0 0 * * *' # Daily at midnight UTC
 
 jobs:
   sync-errors:
@@ -82,11 +85,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: wasabeef/datadog-to-github-issues@v1
+      - uses: wasabeef/datadog-to-github-issues/rum@v1
         with:
           datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
           datadog-app-key: ${{ secrets.DATADOG_APP_KEY }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          service: 'your-service-name'
 ```
 
 ## 📖 Usage
@@ -99,111 +103,110 @@ Once set up, the action will automatically:
 4. **Update existing issues** with new occurrences
 5. **Reopen closed issues** if errors resurface
 
-### Example Configuration
+### Configuration Examples
+
+**Basic Setup:**
 
 ```yaml
 - uses: wasabeef/datadog-to-github-issues@v1
   with:
     datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
     datadog-app-key: ${{ secrets.DATADOG_APP_KEY }}
-    datadog-site: 'datadoghq.eu' # For EU datacenter
     github-token: ${{ secrets.GITHUB_TOKEN }}
-    service: 'frontend-app' # Filter by service
-    date-from: 'now-24h' # Time range
-    date-to: 'now'
-    error-handling: 'unhandled' # Only unhandled errors
-    error-source: 'source' # Filter by error source
-    exclude-noise: true # Exclude common noise
-    max-issues-per-run: 10 # Limit issues created
-    update-existing: true # Update existing issues
-    reopen-closed: true # Reopen if error recurs
-    labels: 'rum-error,frontend,production'
+    service: 'your-service-name'
 ```
 
-### Generated Issue
+**Advanced Setup:**
 
-The action creates detailed GitHub Issues like:
+```yaml
+- uses: wasabeef/datadog-to-github-issues@v1
+  with:
+    datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
+    datadog-app-key: ${{ secrets.DATADOG_APP_KEY }}
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    service: 'frontend-app'
+    language: 'ja' # or 'en' (default)
+    labels: 'datadog'
+    fatal-labels: 'critical'
+    title-prefix: '[DD]'
+```
+
+### Generated Issue Example
+
+<details>
+<summary>Click to see full issue example</summary>
 
 ```markdown
-[frontend-app] TypeError: Cannot read property 'user' of undefined
+TypeError: Cannot read property 'user' of undefined
 
 ## 🚨 Error Summary
 
-**Error Type:** TypeError
-**Total Occurrences:** 45
-**Affected Users:** 12
-**First Seen:** 2025-01-15 14:23:45 UTC
-**Last Seen:** 2025-01-15 18:45:12 UTC
+**Error Type:** TypeError | **Occurrences:** 45 | **Users Affected:** 12
+**First Seen:** 2025-01-15 14:23:45 UTC | **Last Seen:** 2025-01-15 18:45:12 UTC
 
 ## 📊 Error Details
 
-### Stack Trace
+**Stack Trace:**
+```
 
 TypeError: Cannot read property 'user' of undefined
 at UserProfile (app.bundle.js:4567:23)
 at renderWithHooks (vendor.bundle.js:12345:18)
-at mountIndeterminateComponent (vendor.bundle.js:12890:13)
 
-### Error Analysis
-
-This error occurs when attempting to access a 'user' property on an undefined object.
-Common causes include:
-
-- Missing null checks before property access
-- Asynchronous data not yet loaded
-- Component rendering before data is available
-
-## 🌍 Environment Information
-
-### Browsers
-
-- Chrome 120: 35 occurrences (77.8%)
-- Safari 17: 8 occurrences (17.8%)
-- Firefox 121: 2 occurrences (4.4%)
-
-### Operating Systems
-
-- Windows: 25 (55.6%)
-- macOS: 15 (33.3%)
-- iOS: 5 (11.1%)
-
-## 🔗 Datadog Links
-
-- [View in RUM Explorer](https://app.datadoghq.com/rum/explorer?...)
-- [Session Replay](https://app.datadoghq.com/rum/replay/sessions/...)
 ```
+
+**Top Browsers:** Chrome (78%), Safari (18%), Firefox (4%)
+**Environment:** Windows (56%), macOS (33%), iOS (11%)
+
+**[View in Datadog RUM](https://app.datadoghq.com/rum/explorer)** | **[Session Replay](https://app.datadoghq.com/rum/replay)**
+```
+
+</details>
 
 ## 🔧 Configuration
 
-### Inputs
+### Required Inputs
 
-| Input                | Description                                      | Required | Default                  |
-| -------------------- | ------------------------------------------------ | -------- | ------------------------ |
-| `datadog-api-key`    | Datadog API Key                                  | ✅       | -                        |
-| `datadog-app-key`    | Datadog Application Key                          | ✅       | -                        |
-| `datadog-site`       | Datadog site (datadoghq.com, datadoghq.eu, etc.) | ❌       | `datadoghq.com`          |
-| `github-token`       | GitHub Token                                     | ✅       | `${{ github.token }}`    |
-| `service`            | RUM Service name to filter                       | ❌       | -                        |
-| `date-from`          | Start date (e.g., `2025-01-01` or `now-24h`)     | ❌       | `now-24h`                |
-| `date-to`            | End date                                         | ❌       | `now`                    |
-| `error-handling`     | Filter: `all`, `handled`, `unhandled`            | ❌       | `unhandled`              |
-| `error-source`       | Filter: `source`, `network`, `console`           | ❌       | -                        |
-| `exclude-noise`      | Exclude common noise errors                      | ❌       | `true`                   |
-| `max-issues-per-run` | Maximum issues to create per run                 | ❌       | `10`                     |
-| `update-existing`    | Update existing issues                           | ❌       | `true`                   |
-| `reopen-closed`      | Reopen closed issues if error recurs             | ❌       | `true`                   |
-| `labels`             | Comma-separated labels                           | ❌       | `datadog-error,frontend` |
+| Input             | Description             | Default               |
+| ----------------- | ----------------------- | --------------------- |
+| `datadog-api-key` | Datadog API Key         | -                     |
+| `datadog-app-key` | Datadog Application Key | -                     |
+| `github-token`    | GitHub Token            | `${{ github.token }}` |
 
-### Noise Filtering
+### Common Options
 
-By default, the action filters out common noise errors:
+| Input          | Description                    | Default |
+| -------------- | ------------------------------ | ------- |
+| `service`      | RUM Service name to filter     | (all)   |
+| `language`     | Issue language (`en` or `ja`)  | `en`    |
+| `labels`       | Comma-separated labels         | (none)  |
+| `fatal-labels` | Labels for crash errors        | (none)  |
+| `title-prefix` | Custom prefix for issue titles | (none)  |
 
-- ChunkLoadError
-- ResizeObserver loop limit exceeded
-- Non-Error promise rejection
-- Network request failed
-- Script error
-- undefined is not an object
+<details>
+<summary>View all configuration options</summary>
+
+| Input                | Description                                      | Default                     |
+| -------------------- | ------------------------------------------------ | --------------------------- |
+| `datadog-site`       | Datadog site (datadoghq.com, datadoghq.eu, etc.) | `datadoghq.com`             |
+| `datadog-web-url`    | Datadog Web UI URL                               | `https://app.datadoghq.com` |
+| `date-from`          | Start date (e.g., `now-24h`)                     | `now-24h`                   |
+| `date-to`            | End date                                         | `now`                       |
+| `error-handling`     | Filter: `all`, `handled`, `unhandled`            | `unhandled`                 |
+| `error-source`       | Filter: `source`, `network`, `console`           | (all)                       |
+| `exclude-noise`      | Exclude common noise errors                      | `true`                      |
+| `max-issues-per-run` | Maximum issues to create per run                 | `10`                        |
+| `update-existing`    | Update existing issues                           | `true`                      |
+| `reopen-closed`      | Reopen closed issues if error recurs             | `true`                      |
+| `non-fatal-labels`   | Additional labels for non-fatal errors           | (none)                      |
+
+</details>
+
+### Key Features
+
+- **Multiple Languages**: Set `language: 'ja'` for Japanese with JST timestamps
+- **Smart Labeling**: Different labels for crashes (`fatal-labels`) vs regular errors (`non-fatal-labels`)
+- **Noise Filtering**: Automatically excludes common noise errors (ChunkLoadError, etc.)
 
 ## 🔍 Troubleshooting
 
@@ -225,76 +228,55 @@ By default, the action filters out common noise errors:
    - Verify GitHub Actions has `issues: write` permission
    - Check if branch protection rules are blocking the action
 
-## 🤝 Contributing
+## 🔒 Security & Privacy
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development guide, release process, and tag management.
+This action implements comprehensive data protection to ensure sensitive information is never exposed in GitHub Issues:
 
-### Quick Start
+### Automatically Masked Data
 
-```bash
-git clone https://github.com/wasabeef/datadog-to-github-issues.git
-cd datadog-to-github-issues
-bun install
-bun run test
-```
+**Personal Information:**
 
-### Development & Testing Builds
+- **Email addresses**: `john.doe@example.com` → `joh***@example.com`
+- **Phone numbers**: `090-1234-5678` → `0**-****-****` (supports various formats)
+- **Names**: Detected in JSON contexts and masked as `[NAME_REDACTED]`
+- **Addresses**: Postal codes when found in address contexts
 
-#### Local Development
+**Authentication & Secrets:**
 
-```bash
-# Run tests
-bun run test
+- JWT tokens → `eyJ***.[REDACTED].***`
+- API keys and secrets → `[REDACTED]`
+- Passwords and auth tokens → `[REDACTED]`
 
-# Build and check output
-bun run build:check
+**Financial Information:**
 
-# Build and see git changes
-bun run build:dev
-```
+- Credit card numbers → `****-****-****-****`
+- Social Security Numbers → `XXX-XX-XXXX`
 
-#### GitHub CI/CD
+### Preserved Technical Data
 
-This project uses a streamlined workflow for different scenarios:
+The following are **NOT** masked to maintain debugging capability:
 
-- **`ci.yml`**: Runs on every push/PR to main - tests, linting, build, and artifacts upload
-- **`build-preview.yml`**: Runs on PRs - creates downloadable build artifacts and posts usage instructions
-- **`auto-build.yml`**: Runs on ANY feature branch - auto-commits dist/ changes for testing
-- **`release.yml`**: Unified release workflow - creates tags and GitHub releases (manual or auto)
-- **`test.yml`**: Manual testing only - runs actual Datadog API integration tests
+- IP addresses (for technical debugging)
+- UUIDs and technical IDs
+- Error stack traces (with sensitive values within them masked)
+- System information and browser details
 
-### Simple Development Flow
+### Security Best Practices
 
-1. **Create any branch**: `feat-xxx`, `fix-yyy`, `refactor-zzz` - any name works
-2. **Push to branch**: `auto-build.yml` automatically builds and commits dist/
-3. **Create PR**: `build-preview.yml` shows usage instructions and download links
-4. **Test the branch**: Use `@your-branch-name` in other repositories
-5. **Merge to main**: After approval and testing
-6. **Create release**: Manually run `release.yml` workflow to create tag and release
-7. **Done**: Single workflow handles everything!
+1. **API Keys**: Always use GitHub Secrets for Datadog API credentials
+2. **Permissions**: Use minimum required GitHub token permissions
+3. **Review**: Periodically review generated issues for any unmasked sensitive data
+4. **Updates**: Keep the action updated for latest security improvements
 
-#### Using Development Branches in Other Repositories
-
-When testing unreleased features, you can reference any branch in your workflows:
-
-```yaml
-# Use ANY development branch (auto-builds dist/)
-- uses: wasabeef/datadog-to-github-issues@feat-new-feature
-- uses: wasabeef/datadog-to-github-issues@fix-bug-123
-- uses: wasabeef/datadog-to-github-issues@refactor-core
-
-# Use a specific commit SHA
-- uses: wasabeef/datadog-to-github-issues@a1b2c3d4e5f6789
-
-# Use a PR for testing
-- uses: wasabeef/datadog-to-github-issues@refs/pull/42/head
-```
-
-**The PR comment will show you the exact usage instructions for your branch!**
+For security concerns or to report vulnerabilities, please see [SECURITY.md](SECURITY.md).
 
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing guidelines, and contribution process.
 
 ## 🐛 Issues & Support
 
@@ -308,3 +290,4 @@ If you encounter any issues or have questions:
 
 - [Datadog RUM](https://www.datadoghq.com/product/real-user-monitoring/) for providing comprehensive error monitoring
 - GitHub Actions community for inspiration and best practices
+

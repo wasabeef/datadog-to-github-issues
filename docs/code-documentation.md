@@ -2,334 +2,332 @@
 
 ## Overview
 
-This document provides comprehensive documentation for the datadog-to-github-issues codebase. The project is designed to fetch errors from Datadog RUM (Real User Monitoring), process and group them, then create GitHub Issues with rich context and error details.
+This document provides comprehensive documentation for the datadog-to-github-issues monorepo codebase. The project consists of GitHub Actions that integrate Datadog with GitHub Issues:
 
-## Architecture
+- **RUM Action**: Fetches errors from Datadog RUM (Real User Monitoring) and creates GitHub Issues
+- **Monitor Action**: Creates issues from Datadog Monitor alerts (coming soon)
 
-### Core Components
+## Monorepo Architecture
 
-#### 1. Entry Point (`src/index.ts`)
+### Project Structure
 
-The main GitHub Action entry point that orchestrates the entire workflow.
+```
+datadog-to-github-issues/
+├── packages/
+│   ├── core/               # Shared utilities and types
+│   │   ├── src/
+│   │   │   ├── utils/
+│   │   │   │   └── security.ts
+│   │   │   ├── types.ts
+│   │   │   └── index.ts
+│   │   └── package.json
+│   ├── rum-action/         # RUM error monitoring action
+│   │   ├── src/
+│   │   │   ├── datadog-client.ts
+│   │   │   ├── error-processor.ts
+│   │   │   ├── github-client.ts
+│   │   │   ├── issue-formatter.ts
+│   │   │   ├── translations.ts
+│   │   │   └── index.ts
+│   │   ├── tests/
+│   │   └── package.json
+│   └── monitor-action/     # Monitor alert action (placeholder)
+│       ├── src/
+│       └── package.json
+├── rum/                    # Stub for rum action usage
+│   └── action.yml
+├── monitor/                # Stub for monitor action usage
+│   └── action.yml
+├── turbo.json             # Turborepo configuration
+└── package.json           # Root package.json
+```
 
-**Key Responsibilities:**
+### Build System
 
-- Fetches RUM errors from Datadog API using `DatadogClient`
-- Processes and groups errors using `ErrorProcessor`
-- Creates/updates GitHub Issues using `GithubClient`
-- Handles error reporting and success logging
+The project uses:
+- **Turborepo** for monorepo management and task orchestration
+- **Bun** as the package manager
+- **@vercel/ncc** for bundling actions into single files
+- **TypeScript** for type safety
 
-**Flow:**
+## Core Components
 
-1. Parse GitHub Action inputs (API keys, configuration options)
+### 1. Core Package (`packages/core`)
+
+Shared utilities and types used across all actions.
+
+#### Security Utilities (`src/utils/security.ts`)
+
+Comprehensive data masking and security functions:
+
+- **Email Masking**: `john.doe@example.com` → `joh***@example.com`
+- **Phone Number Masking**: Various formats including Japanese numbers
+- **JWT Token Redaction**: `eyJ...` → `eyJ***.[REDACTED].***`
+- **API Key Masking**: Detects and masks various API key patterns
+- **Financial Data**: Credit cards, SSNs
+- **Preserves Technical Data**: IPs, UUIDs (for debugging)
+
+#### Types (`src/types.ts`)
+
+Common TypeScript interfaces and types shared across actions.
+
+### 2. RUM Action (`packages/rum-action`)
+
+#### Entry Point (`src/index.ts`)
+
+The main GitHub Action entry point that orchestrates the workflow:
+
+1. Parse GitHub Action inputs (API keys, configuration)
 2. Fetch RUM error events from Datadog
-3. Process errors (grouping, filtering, security masking)
+3. Process errors (grouping, filtering, masking)
 4. Format error data for GitHub Issues
-5. Create or update GitHub Issues with error details
+5. Create or update GitHub Issues
 
-#### 2. Datadog Client (`src/datadog-client.ts`)
+#### Datadog Client (`src/datadog-client.ts`)
 
-Handles all Datadog RUM API interactions and error data retrieval.
+Handles all Datadog RUM API interactions:
 
 **Key Features:**
-
-- Comprehensive RUM error querying with filters
-- Support for time ranges, services, error types
-- Rate limiting and error handling
-- Data validation and transformation
+- Uses `@datadog/datadog-api-client` v2 API
+- Supports multiple Datadog sites (US1, EU, etc.)
+- Pagination handling (up to 1000 events per page)
+- Rate limiting awareness
+- Comprehensive error filtering
 
 **Main Methods:**
+```typescript
+fetchRUMErrors(query: string, dateFrom: string, dateTo: string): Promise<RUMError[]>
+```
 
-- `getRumErrors(options)`: Primary interface for error retrieval
-- `buildQuery(options)`: Constructs Datadog query strings
-- `fetchRumEvents(query)`: Executes API calls with pagination
-- `transformEventData(events)`: Converts raw API data to structured format
+#### Error Processor (`src/error-processor.ts`)
 
-#### 3. Error Processor (`src/error-processor.ts`)
-
-Core processing engine that groups, filters, and prepares error data.
-
-**Architecture Highlights:**
-
-- **Fingerprinting**: Creates unique fingerprints for error grouping
-- **Noise Filtering**: Removes common, non-actionable errors
-- **Security Masking**: Removes or masks sensitive information
-- **Deduplication**: Groups similar errors to reduce noise
-
-#### 4. Issue Formatter (`src/issue-formatter.ts`)
-
-Transforms processed error data into GitHub Issue format.
+Core processing engine for error grouping and analysis:
 
 **Key Features:**
+- **Fingerprinting**: SHA256 hash of normalized error characteristics
+- **Stack Normalization**: Removes line numbers, IDs for consistent grouping
+- **Noise Filtering**: Excludes common non-actionable errors
+- **Statistics Tracking**: Occurrences, affected users, browsers
 
-- Rich markdown formatting with error details
-- Environment and browser statistics
-- Stack trace formatting and analysis
-- Direct links to Datadog RUM Explorer and Session Replays
+**Error Grouping:**
+```typescript
+interface ErrorGroup {
+  hash: string;                    // SHA256 fingerprint
+  count: number;                   // Total occurrences
+  representative: RUMError;        // First error instance
+  occurrences: RUMError[];         // All error instances
+  affectedUsers: Set<string>;      // Unique user IDs
+  affectedUrls: Set<string>;       // URLs where error occurred
+  browsers: Map<string, number>;   // Browser distribution
+  // ... more statistics
+}
+```
 
-#### 5. GitHub Client (`src/github-client.ts`)
+#### Issue Formatter (`src/issue-formatter.ts`)
 
-Manages GitHub Issues API operations.
-
-**Key Features:**
-
-- Smart issue identification using fingerprints
-- Issue lifecycle management (create, update, reopen)
-- Comment handling for updates
-- Error handling for API failures
-
-#### 6. Security Utilities (`src/utils/security.ts`)
-
-Comprehensive data masking and security functions.
+Transforms error data into rich GitHub Issues:
 
 **Features:**
+- **Internationalization**: English and Japanese support
+- **Timezone Handling**: JST conversion for Japanese locale
+- **Rich Markdown**: Comprehensive error details, statistics
+- **Timeline Generation**: Hourly error distribution
+- **Session Replay Links**: Direct links to Datadog RUM
+- **Smart Truncation**: Ensures titles fit GitHub limits
 
-- Email address masking
-- IP address anonymization
-- UUID and token redaction
-- Stack trace sanitization
+**Issue Structure:**
+1. Error summary with key metrics
+2. Detailed stack trace and analysis
+3. Environment information
+4. User impact statistics
+5. Browser/OS distribution
+6. Error timeline
+7. Direct Datadog links
 
-## Detailed Component Analysis
+#### GitHub Client (`src/github-client.ts`)
 
-### Error Processing Deep Dive
+Manages GitHub Issues API operations:
 
-The error processor is the most complex component, responsible for transforming raw Datadog RUM errors into actionable GitHub Issues.
+**Key Features:**
+- **Issue Identification**: Uses error hash in HTML comments
+- **Smart Updates**: Single pinned status comment
+- **Reopen Logic**: Based on days closed and severity
+- **Label Management**: Conditional labeling for fatal/non-fatal
+- **Update History**: Tracks occurrences over time
 
-#### Error Fingerprinting
+#### Translations (`src/translations.ts`)
 
-The fingerprinting system creates unique identifiers for grouping similar errors:
-
-```typescript
-const createErrorFingerprint = (error: RumError): string => {
-  // Combines error type, message pattern, and stack trace signature
-  const components = [
-    normalizeErrorType(error.type),
-    normalizeErrorMessage(error.message),
-    normalizeStackTrace(error.stack),
-  ];
-  return hashComponents(components);
-};
-```
-
-#### Noise Filtering
-
-Common noise patterns are filtered out to reduce issue volume:
-
-```typescript
-const NOISE_PATTERNS = [
-  'ChunkLoadError',
-  'ResizeObserver loop limit exceeded',
-  'Non-Error promise rejection',
-  'Network request failed',
-  'Script error',
-  'undefined is not an object',
-];
-```
-
-#### Security Masking Pipeline
-
-Multi-stage data sanitization:
-
-1. **Email Masking**: `john.doe@example.com` → `joh***@example.com`
-2. **IP Anonymization**: `192.168.1.100` → `xxx.xxx.xxx.xxx`
-3. **UUID Redaction**: Partial masking of UUIDs
-4. **Token Sanitization**: API keys → `[REDACTED]`
-5. **Stack Trace Cleaning**: Remove sensitive file paths
-
-### Issue Formatting System
-
-The issue formatter creates rich, structured GitHub Issues:
-
-#### Template Structure
-
-```markdown
-[service] ErrorType: Error message
-
-## 🚨 Error Summary
-
-- Error details and statistics
-
-## 📊 Error Details
-
-- Stack trace with analysis
-- Environment information
-
-## 🌍 User Impact
-
-- Geographic and demographic data
-
-## 🔗 Datadog Links
-
-- Direct links to RUM Explorer and Session Replays
-```
-
-#### Error Analysis
-
-Automated error analysis provides context:
+Centralized translation system:
 
 ```typescript
-const analyzeError = (error: ProcessedError): ErrorAnalysis => {
-  return {
-    category: categorizeError(error.type, error.message),
-    commonCauses: identifyCommonCauses(error),
-    suggestedFixes: generateSuggestions(error),
-    severity: calculateSeverity(error),
-  };
-};
+translations = {
+  en: { /* English translations */ },
+  ja: { /* Japanese translations */ }
+}
 ```
 
-### GitHub Integration
+### 3. Monitor Action (`packages/monitor-action`)
 
-#### Issue Lifecycle Management
+Placeholder for future Datadog Monitor alert integration.
 
-```typescript
-const manageIssueLifecycle = async (error: ProcessedError): Promise<void> => {
-  const existingIssue = await findExistingIssue(error.fingerprint);
+## Configuration
 
-  if (existingIssue) {
-    if (existingIssue.state === 'closed' && shouldReopen(error)) {
-      await reopenIssue(existingIssue, error);
-    } else {
-      await updateIssue(existingIssue, error);
-    }
-  } else {
-    await createNewIssue(error);
-  }
-};
-```
+### Required Inputs
 
-## Configuration and Constants
+| Input | Description | Required |
+|-------|-------------|----------|
+| `datadog-api-key` | Datadog API Key | Yes |
+| `datadog-app-key` | Datadog Application Key | Yes |
+| `github-token` | GitHub Token | Yes |
 
-### Environment Variables
+### RUM Action Specific Options
 
-- `DATADOG_API_KEY`: Datadog API key for RUM access
-- `DATADOG_APP_KEY`: Datadog Application key
-- `GITHUB_TOKEN`: GitHub API token for issue operations
+| Input | Description | Default |
+|-------|-------------|---------|
+| `service` | RUM Service name filter | (all) |
+| `date-from` | Start date (e.g., `now-24h`) | `now-24h` |
+| `date-to` | End date | `now` |
+| `error-handling` | Filter: `all`, `handled`, `unhandled` | `unhandled` |
+| `error-source` | Filter: `source`, `network`, `console` | (all) |
+| `exclude-noise` | Exclude common noise errors | `true` |
+| `max-issues-per-run` | Maximum issues to create | `10` |
+| `update-existing` | Update existing issues | `true` |
+| `reopen-closed` | Reopen if error recurs | `true` |
+| `language` | Issue language (`en`, `ja`) | `en` |
+| `labels` | Base labels (comma-separated) | (none) |
+| `fatal-labels` | Labels for crash errors | (none) |
+| `non-fatal-labels` | Labels for non-fatal errors | (none) |
+| `title-prefix` | Custom issue title prefix | (none) |
 
-### Configurable Options
+## Security Considerations
 
-- **Time Range**: `date-from` and `date-to` for error time window
-- **Service Filtering**: `service` parameter for specific applications
-- **Error Types**: `error-handling` and `error-source` filters
-- **Volume Control**: `max-issues-per-run` to prevent flooding
-- **Labeling**: Custom labels for organization
+### Data Protection Pipeline
 
-### Hardcoded Configurations
+1. **Raw Data Fetching**: Datadog API returns raw error data
+2. **Initial Filtering**: Noise patterns removed
+3. **Security Masking**: Multiple passes to mask sensitive data
+4. **Context Filtering**: Recursive filtering of nested objects
+5. **Final Validation**: Ensure no sensitive data remains
 
-- **Noise Filtering**: Predefined list of common noise patterns
-- **Security Masking**: Standard patterns for sensitive data
-- **Rate Limiting**: API call throttling to respect limits
+### Masked Patterns
+
+- Email addresses (partial masking)
+- Phone numbers (various formats)
+- JWT tokens and API keys
+- Credit card numbers
+- Social Security Numbers
+- Names in JSON contexts
+- Addresses and postal codes
+
+### Preserved Data
+
+For debugging purposes, these are NOT masked:
+- IP addresses
+- UUIDs (partial masking only)
+- Technical error details
+- Stack traces (with sensitive values within masked)
 
 ## Testing Strategy
 
-The project uses Jest for comprehensive testing:
+### Test Structure
 
-### Test Categories
+```
+packages/rum-action/tests/
+├── error-processor.test.ts    # Error grouping and processing
+├── issue-formatter.test.ts    # Issue formatting and i18n
+├── security.test.ts          # Security masking validation
+└── local-runner.js           # Local development testing
+```
 
-1. **Unit Tests**: Individual function testing with mocks
-2. **Integration Tests**: Real Datadog API calls (environment-dependent)
-3. **Security Tests**: Verification of data masking functionality
-4. **End-to-End Tests**: Full workflow testing
+### Local Testing
 
-### Key Test Files
-
-- `tests/error-processor.test.ts`: Error processing and grouping tests
-- `tests/issue-formatter.test.ts`: Issue formatting and template tests
-- `tests/security.test.ts`: Security masking and sanitization tests
-- `tests/local-runner.js`: Local testing and development script
-
-### Test Data Management
-
-- Mock Datadog RUM events for unit testing
-- Environment-based integration test configuration
-- Security test vectors for masking validation
+```bash
+cd packages/rum-action
+cp .env.example .env
+# Edit .env with your credentials
+bun run build
+bun run local
+```
 
 ## Performance Considerations
 
 ### API Efficiency
 
-- **Batched Processing**: Processes multiple errors efficiently
-- **Smart Querying**: Optimized Datadog queries to minimize API calls
-- **Rate Limiting**: Respects API limits to prevent throttling
-- **Caching Strategy**: Avoids redundant API calls where possible
+- **Batch Processing**: Handles up to 1000 errors per API call
+- **Smart Querying**: Optimized Datadog query construction
+- **Parallel Operations**: GitHub API calls when possible
+- **Memory Efficient**: Streaming processing for large datasets
 
-### Memory Management
+### Rate Limiting
 
-- **Streaming Processing**: Processes errors sequentially to manage memory
-- **Efficient Data Structures**: Uses appropriate data structures for performance
-- **Garbage Collection**: Proper cleanup of large objects
+- Datadog: 300 requests/hour, 1000/minute
+- GitHub: Standard API limits apply
+- Built-in retry logic and error handling
 
-### GitHub API Optimization
+## CI/CD Pipeline
 
-- **Issue Deduplication**: Prevents duplicate issues for same errors
-- **Batch Updates**: Groups related operations where possible
-- **Smart Polling**: Only checks for existing issues when necessary
+### GitHub Workflows
 
-## Security Considerations
+1. **CI** (`ci.yml`): Runs on all pushes and PRs
+   - Tests, linting, building
+   - Uploads artifacts
 
-### Data Protection
+2. **Build Preview** (`build-preview.yml`): PR-specific
+   - Builds and prepares dist files
+   - Comments on PR with usage instructions
+   - Enables branch testing
 
-- **Comprehensive Masking**: Multiple layers of sensitive data protection
-- **Input Validation**: Prevents injection attacks and malformed data
-- **Secure Token Handling**: Proper management of API credentials
+3. **Release** (`release.yml`): Tag-triggered
+   - Builds all packages
+   - Copies dist files to action directories
+   - Creates GitHub release with git-cliff notes
+   - Publishes ready-to-use actions
 
-### Privacy Compliance
+## Future Enhancements
 
-- **PII Removal**: Automatically removes personally identifiable information
-- **Geographic Data**: Anonymizes location data appropriately
-- **User Tracking**: Removes or masks user identifiers
+### Planned Features
 
-### API Security
+1. **Monitor Action Implementation**
+   - Datadog Monitor alert integration
+   - Alert grouping and deduplication
+   - Rich context from monitor metadata
 
-- **Read-Only Operations**: Only performs read operations on Datadog
-- **Limited Scope**: Minimal required permissions for GitHub operations
-- **Error Sanitization**: Prevents information leakage through error messages
+2. **Enhanced Error Analysis**
+   - ML-based error similarity detection
+   - Trend analysis and predictions
+   - Root cause suggestions
 
-## Future Enhancement Areas
-
-### Potential Improvements
-
-1. **Advanced Grouping**: Machine learning-based error similarity detection
-2. **Trend Analysis**: Historical error pattern analysis
-3. **Alert Integration**: Integration with alerting systems
-4. **Custom Templates**: User-configurable issue templates
-5. **Performance Monitoring**: Enhanced performance metrics and optimization
+3. **Additional Integrations**
+   - Slack notifications
+   - Custom webhooks
+   - JIRA integration option
 
 ### Extension Points
 
-- **Data Sources**: Support for additional monitoring platforms
-- **Output Formats**: Multiple issue tracking system support
-- **Processing Pipeline**: Pluggable error processing modules
-- **Analysis Engine**: Extensible error analysis capabilities
+- Additional data sources beyond RUM
+- Custom error processors
+- Pluggable formatters
+- Additional language support
 
 ## Maintenance Guidelines
 
-### Code Quality Standards
+### Code Quality
 
-- **Function Complexity**: Keep functions focused and testable
-- **Type Safety**: Comprehensive TypeScript typing
-- **Error Handling**: Robust error handling with meaningful messages
-- **Documentation**: Clear inline documentation and examples
+- TypeScript strict mode enabled
+- ESLint for code quality
+- Prettier for formatting
+- Comprehensive test coverage
 
-### Security Requirements
+### Security Updates
 
-- **Regular Audits**: Periodic security review of masking patterns
-- **Test Coverage**: Comprehensive security testing
-- **Dependency Updates**: Regular updates of security-related dependencies
-- **Vulnerability Monitoring**: Automated vulnerability scanning
+- Regular dependency updates
+- Security audit of masking patterns
+- Vulnerability scanning in CI
 
-### Performance Monitoring
+### Documentation
 
-- **API Usage**: Monitor Datadog and GitHub API usage
-- **Memory Profiling**: Regular memory usage analysis
-- **Execution Time**: Track action execution time and optimization opportunities
-- **Error Rates**: Monitor action failure rates and causes
+- Keep code documentation in sync
+- Update examples with new features
+- Maintain comprehensive test cases
 
-### Documentation Requirements
-
-- **API Documentation**: Clear documentation of all public interfaces
-- **Configuration Guide**: Comprehensive configuration options documentation
-- **Troubleshooting**: Common issues and resolution steps
-- **Security Guide**: Security best practices and considerations
-
-This documentation provides a comprehensive overview of the codebase architecture, design decisions, and maintenance guidelines. For specific implementation details, refer to the inline code comments and type definitions.
+This documentation provides a complete overview of the monorepo architecture and implementation details. For specific usage examples, see [usage-examples.md](./usage-examples.md).

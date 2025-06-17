@@ -4,58 +4,57 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a GitHub Action project that automatically creates GitHub Issues from Datadog RUM (Real User Monitoring) errors. The project is currently in the planning phase with a comprehensive implementation plan documented in `plan.md`.
+This is a monorepo containing GitHub Actions that integrate Datadog with GitHub Issues:
 
-## Project Structure
+- **rum-action**: Creates issues from Datadog RUM (Real User Monitoring) errors
+- **monitor-action**: Creates issues from Datadog Monitor alerts (placeholder, not yet implemented)
 
-```
-.github/
-├── workflows/
-│   └── datadog-to-github-issues.yml    # GitHub Actions workflow definition
-├── actions/
-│   └── datadog-to-github-issues/
-│       ├── action.yml                  # Custom action definition
-│       ├── package.json                # Node.js dependencies
-│       ├── index.js                    # Main implementation
-│       └── lib/
-│           ├── datadog-client.js       # Datadog API client
-│           ├── github-client.js        # GitHub API client
-│           ├── error-processor.js      # Error processing logic
-│           └── utils.js                # Utility functions
-```
+The project uses Turborepo for managing the monorepo structure and Bun as the package manager.
 
 ## Commands
-
-### Initial Setup
-
-```bash
-# Create directory structure
-mkdir -p .github/workflows .github/actions/datadog-to-github-issues/lib
-
-# Initialize package in the action directory
-cd .github/actions/datadog-to-github-issues
-bun install
-```
 
 ### Development
 
 ```bash
-# Run local tests (requires .env file with credentials)
-cd .github/actions/datadog-to-github-issues
-bun run test
+# Install dependencies
+bun install
 
-# Build the action
+# Run all tests
+bun test
+
+# Run tests for a specific package
+cd packages/rum-action && bun test
+
+# Run a single test file
+bun test tests/error-processor.test.ts
+
+# Build all packages (required before committing)
 bun run build
 
-# Run linting
-bun run lint
+# Build and check output
+bun run build:check
+
+# Lint all packages
+bun lint
+
+# Format all packages
+bun format
+
+# Generate release notes (uses git-cliff)
+bun run release-notes
 ```
 
-### Testing
+### Testing Locally
 
 ```bash
-# Test the action locally
-bun run tests/local-runner.js
+# Test RUM action with local runner (requires .env file in project root)
+bun local:rum
+
+# Test Monitor action (coming soon)
+bun local:monitor
+
+# Alternative: run from package directory
+cd packages/rum-action && bun run local
 
 # Test Datadog API connection
 curl -X POST "https://api.datadoghq.com/api/v2/rum/events/search" \
@@ -65,111 +64,156 @@ curl -X POST "https://api.datadoghq.com/api/v2/rum/events/search" \
   -d '{"filter": {"from": "now-1h", "to": "now", "query": "@type:error"}, "page": {"limit": 1}}'
 ```
 
+### Release Process
+
+```bash
+# Create a release by pushing a tag
+git tag v1.0.0
+git push origin v1.0.0
+# GitHub Actions will automatically:
+# 1. Run CI tests
+# 2. Build packages with ncc
+# 3. Copy dist files to rum/dist and monitor/dist
+# 4. Generate release notes with git-cliff
+# 5. Create GitHub release with built artifacts
+```
+
 ## Architecture
+
+### Monorepo Structure
+
+```
+datadog-to-github-issues/
+├── packages/
+│   ├── core/          # Shared utilities and types
+│   ├── rum-action/    # RUM error monitoring action
+│   └── monitor-action/# Monitor alert action (not implemented)
+├── rum/               # Action entry point for wasabeef/datadog-to-github-issues/rum@v1
+├── monitor/           # Action entry point for wasabeef/datadog-to-github-issues/monitor@v1
+├── turbo.json         # Turborepo configuration
+└── .github/
+    ├── cliff.toml     # git-cliff configuration for release notes
+    └── workflows/
+        ├── ci.yml     # Continuous integration
+        ├── release.yml # Tag-based automatic release
+        └── build-preview.yml # PR preview builds
+```
 
 ### Core Components
 
-1. **Datadog RUM Integration**
+1. **`packages/rum-action/src/index.ts`** - Entry point that orchestrates the workflow:
+   - Validates inputs and environment
+   - Fetches errors from Datadog
+   - Groups similar errors
+   - Creates/updates GitHub Issues
 
-   - Uses Datadog RUM API v2 to fetch frontend errors
-   - Handles pagination for large datasets
-   - Supports filtering by service, date range, and custom queries
-   - API endpoints vary by Datadog site (US1, EU, US3, US5, AP1, US1-FED)
+2. **`packages/rum-action/src/datadog-client.ts`** - Datadog API integration:
+   - Uses `@datadog/datadog-api-client` v2 API
+   - Handles pagination and rate limiting
+   - Supports multiple Datadog sites (US1, EU, etc.)
+   - Builds complex RUM queries with filters
 
-2. **Error Processing**
-
-   - Groups similar errors using hash generation
+3. **`packages/rum-action/src/error-processor.ts`** - Error grouping and fingerprinting:
+   - Groups errors by normalized hash (SHA256)
    - Normalizes stack traces for consistent grouping
-   - Preserves full stack traces for debugging
-   - Tracks error occurrences, affected users, and URLs
+   - Tracks error statistics (occurrences, users, URLs)
+   - Filters noise errors (ChunkLoadError, ResizeObserver, etc.)
 
-3. **GitHub Issue Creation**
-   - Creates structured issues with comprehensive error details
-   - Prevents duplicates using error hash in HTML comments
-   - Applies automatic labeling based on error characteristics
-   - Includes links to Datadog session replays and error tracking
+4. **`packages/core/src/github-client.ts`** - GitHub Issues management:
+   - Creates issues with error hash in HTML comments
+   - Updates existing issues with status comments
+   - Handles issue reopening logic
+   - Manages label assignment
+
+5. **`packages/rum-action/src/issue-formatter.ts`** - Issue content generation:
+   - Supports English and Japanese (with JST timestamps)
+   - Generates rich markdown with error analysis
+   - Creates timeline visualizations
+   - Masks sensitive data in output
+
+6. **`packages/core/src/utils/security.ts`** - Data protection:
+   - Masks emails, phone numbers, names, addresses
+   - Redacts API keys, tokens, passwords
+   - Preserves technical data (IPs, UUIDs) for debugging
 
 ### Key Technical Details
 
-- **Node.js 20** runtime for GitHub Actions
-- **Error Hash Generation**: Uses SHA256 hash of normalized error components (type, message, source, stack trace first 5 lines)
-- **Stack Trace Processing**:
-  - Full stack traces are preserved for display
-  - Normalization removes variable elements (line numbers, IDs, timestamps) for grouping
-  - Analysis separates application frames from vendor/library frames
-- **API Rate Limits**:
-  - Datadog: 300 requests/hour, 1000 requests/minute
-  - GitHub: 5000 requests/hour (authenticated)
-- **Issue Body Limit**: GitHub issues support up to 65,536 characters
+- **TypeScript** with strict type checking
+- **Bun** as package manager and test runner
+- **Turborepo** for monorepo task orchestration with caching
+- **@vercel/ncc** for bundling into single `dist/index.js`
+- **Error Hash**: SHA256 of normalized (type + message + source + stack first 5 lines)
+- **Stack Normalization**: Removes line numbers, IDs, timestamps for grouping
+- **Issue Identification**: Uses `<!-- error-hash: {hash} -->` in issue body
+- **Status Updates**: Single pinned comment with `<!-- status-update-comment -->`
+- **Browser Distribution**: Conditionally rendered (hidden for mobile apps without browser data)
 
-### Data Flow
+### Configuration Flow
 
-1. GitHub Action triggers (scheduled or manual)
-2. Fetch RUM errors from Datadog API with filters
-3. Group errors by normalized hash
-4. Check for existing GitHub issues
-5. Create new issues for ungrouped errors
-6. Apply labels and formatting
+1. Action inputs → Environment variables (`INPUT_*`)
+2. `DatadogClient` reads site-specific configuration
+3. `IssueFormatter` uses language settings for localization
+4. `GitHubClient` applies label configuration
 
 ## Important Implementation Notes
 
-1. **Security**:
+### Datadog API Specifics
 
-   - Never log API keys or sensitive data
-   - Use GitHub Secrets for credentials
-   - Sanitize user data in issue content
+- Site configuration affects both API endpoint and web URLs
+- RUM API requires both API Key and Application Key
+- Query syntax: `@type:error AND service:myapp`
+- Pagination: 1000 events per page maximum
+- Rate limits: 300/hour, 1000/minute
 
-2. **Error Handling**:
+### GitHub Issue Management
 
-   - Implement retry logic for API rate limits
-   - Handle pagination for large result sets
-   - Validate all input parameters
+- Issues are never deleted, only closed/reopened
+- Duplicate prevention via error hash lookup
+- Status comment is updated (not appended) to avoid clutter
+- Reopening logic based on days closed and error severity
 
-3. **Performance**:
+### Security Patterns
 
-   - Process errors in batches to avoid rate limits
-   - Cache existing issues to reduce API calls
-   - Use parallel processing where appropriate
+```typescript
+// Sensitive data is masked before display
+const maskedData = maskSensitiveData(rawData);
 
-4. **Stack Trace Handling**:
-   - Always preserve complete stack traces
-   - Separate normalization logic (for hashing) from display logic
-   - Detect minified code and suggest source map uploads
+// Context objects are filtered recursively
+const filteredContext = filterSensitiveContext(errorContext);
+```
+
+### Testing Approach
+
+- Unit tests mock external APIs
+- Integration tests use real API calls (requires credentials)
+- Local runner simulates GitHub Actions environment
+- Test data includes various error types and edge cases
+- Monitor action tests use `--passWithNoTests` flag (not yet implemented)
 
 ## Environment Configuration
 
-Required GitHub Secrets:
+For local testing, copy the appropriate example file to `.env` in the project root:
 
-- `DATADOG_API_KEY`: Datadog API Key
-- `DATADOG_APP_KEY`: Datadog Application Key
+```bash
+# For RUM testing
+cp .env.rum.example .env
 
-Optional GitHub Variables:
+# For Monitor testing (coming soon)
+cp .env.monitor.example .env
+```
 
-- `DATADOG_SITE`: Datadog site (default: `datadoghq.com`)
+Required for production:
+- `DATADOG_API_KEY`
+- `DATADOG_APP_KEY`
+- `GITHUB_TOKEN` (provided by Actions)
 
-## Testing Strategy
+Optional configuration:
+- `DATADOG_SITE` (default: datadoghq.com)
+- `DATADOG_WEB_URL` (default: https://app.datadoghq.com)
+- See `.env.rum.example` or `.env.monitor.example` for all available options
 
-1. **Unit Tests**: Test hash generation, stack trace normalization, query building
-2. **Integration Tests**: Test API connections, end-to-end workflow
-3. **Local Development**: Use environment variables and mock data for testing
+## Recent Changes
 
-## Common Tasks
-
-### Adding a New Filter Parameter
-
-1. Update `action.yml` to add the new input
-2. Modify query builder in `datadog-client.js`
-3. Update workflow file to expose the parameter
-
-### Debugging API Issues
-
-1. Check API credentials and permissions
-2. Verify Datadog site configuration matches your region
-3. Use curl commands to test API endpoints directly
-4. Check rate limit headers in responses
-
-### Modifying Issue Format
-
-1. Edit `generateIssueBody()` in `error-processor.js`
-2. Update label generation logic if needed
-3. Test with mock data to verify formatting
+- **Browser Distribution Hiding**: Browser distribution section is now hidden for mobile app errors (Swift, Kotlin, Flutter) when no browser data is available
+- **Monorepo Migration**: Restructured from single action to monorepo supporting multiple action types
+- **git-cliff Integration**: Release notes are now automatically generated from conventional commits

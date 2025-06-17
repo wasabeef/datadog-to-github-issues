@@ -1,21 +1,27 @@
 {
   "name": "datadog-to-github-issues",
-  "version": "1.0.0",
-  "description": "GitHub Action: Datadog Errors to GitHub Issues",
-  "main": "dist/index.js",
+  "version": "0.1.0",
+  "description": "GitHub Actions for Datadog integration",
+  "private": true,
+  "packageManager": "bun@1.2.14",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "prepare": "bun run build",
-    "build": "ncc build src/index.ts -o dist",
-    "build:check": "bun run build && echo '📦 Build completed. Check dist/ folder:' && ls -la dist/",
-    "build:dev": "bun run build && git add dist/ && echo '🔍 Build changes:' && git diff --cached --stat",
-    "test": "jest",
-    "lint": "eslint .",
-    "format": "prettier --write ."
+    "build": "turbo run build",
+    "build:check": "turbo run build:check",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "format": "turbo run format",
+    "release-notes": "git-cliff --latest --strip header",
+    "local:rum": "cd packages/rum-action && bun run local",
+    "local:monitor": "cd packages/monitor-action && bun run local"
   },
   "keywords": [
     "github-actions",
     "datadog",
     "rum",
+    "monitor",
     "error-tracking",
     "monitoring"
   ],
@@ -32,22 +38,7 @@
     "url": "https://github.com/wasabeef/datadog-to-github-issues/issues"
   },
   "homepage": "https://github.com/wasabeef/datadog-to-github-issues#readme",
-  "dependencies": {
-    "@actions/core": "^1.11.1",
-    "@actions/github": "^6.0.1",
-    "@datadog/datadog-api-client": "^1.20.0"
-  },
   "devDependencies": {
-    "@eslint/js": "^9.29.0",
-    "@types/jest": "^30.0.0",
-    "@types/node": "^24.0.3",
-    "@typescript-eslint/eslint-plugin": "^8.34.1",
-    "@typescript-eslint/parser": "^8.34.1",
-    "@vercel/ncc": "^0.38.3",
-    "eslint": "^9.29.0",
-    "jest": "^30.0.0",
-    "prettier": "^3.5.3",
-    "ts-jest": "^29.4.0",
-    "typescript": "^5.8.3"
+    "turbo": "^2.0.0"
   }
 }

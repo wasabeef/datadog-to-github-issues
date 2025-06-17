@@ -1,0 +1,89 @@
+name: 'Datadog to GitHub Issues'
+description: 'Fetches Datadog errors and creates GitHub issues for error tracking'
+author: 'wasabeef'
+inputs:
+  datadog-api-key:
+    description: 'Datadog API Key'
+    required: true
+  datadog-app-key:
+    description: 'Datadog Application Key'
+    required: true
+  datadog-site:
+    description: 'Datadog site (e.g., datadoghq.com, datadoghq.eu)'
+    required: false
+    default: 'datadoghq.com'
+  datadog-web-url:
+    description: 'Datadog Web UI URL (e.g., https://wasabeef.datadoghq.com, https://app.datadoghq.eu)'
+    required: false
+    default: 'https://app.datadoghq.com'
+  language:
+    description: 'Language for issue content (en, ja)'
+    required: false
+    default: 'en'
+  github-token:
+    description: 'GitHub Token'
+    required: true
+    default: '${{ github.token }}'
+  service:
+    description: 'RUM Service name to filter'
+    required: false
+  date-from:
+    description: 'Start date (e.g., 2025-01-01 or now-24h)'
+    required: false
+    default: 'now-24h'
+  date-to:
+    description: 'End date (e.g., 2025-01-02 or now)'
+    required: false
+    default: 'now'
+  error-handling:
+    description: 'Error handling filter (all, handled, unhandled)'
+    required: false
+    default: 'unhandled'
+  error-source:
+    description: 'Error source filter (source, network, console)'
+    required: false
+  exclude-noise:
+    description: 'Exclude known noise errors'
+    required: false
+    default: 'true'
+  max-issues-per-run:
+    description: 'Maximum issues to create per run'
+    required: false
+    default: '10'
+  update-existing:
+    description: 'Update existing issues with new occurrences'
+    required: false
+    default: 'true'
+  reopen-closed:
+    description: 'Reopen closed issues if error recurs'
+    required: false
+    default: 'true'
+  labels:
+    description: 'Comma-separated list of labels to add to issues'
+    required: false
+    default: ''
+  fatal-labels:
+    description: 'Additional labels for fatal errors (crashes)'
+    required: false
+    default: ''
+  non-fatal-labels:
+    description: 'Additional labels for non-fatal errors'
+    required: false
+    default: ''
+  title-prefix:
+    description: 'Prefix to add to issue titles (e.g., "[🐶]")'
+    required: false
+    default: ''
+outputs:
+  issues-created:
+    description: 'Number of issues created'
+  issues-updated:
+    description: 'Number of issues updated'
+  issues-reopened:
+    description: 'Number of issues reopened'
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
+branding:
+  icon: 'alert-circle'
+  color: 'purple'

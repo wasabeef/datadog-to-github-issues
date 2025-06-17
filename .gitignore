@@ -23,6 +23,13 @@ npm-debug.log*
 # Environment
 .env
 .env.local
+.env.rum
+.env.monitor
 
 # Build output
-dist/
+/packages/*/dist/
+!rum/dist/
+!monitor/dist/
+
+# Turborepo
+.turbo/

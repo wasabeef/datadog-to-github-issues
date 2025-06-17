@@ -1,0 +1,46 @@
+# This is a stub file that allows users to reference the Monitor action as:
+# uses: wasabeef/datadog-to-github-issues/monitor@v1
+#
+# The actual action implementation is in packages/monitor-action/
+# During release, the built file will be copied to monitor/dist/index.js
+
+name: 'Datadog Monitor to GitHub Issues'
+description: 'Creates GitHub issues from Datadog Monitor alerts'
+author: 'wasabeef'
+
+inputs:
+  datadog-api-key:
+    description: 'Datadog API Key'
+    required: true
+  datadog-app-key:
+    description: 'Datadog Application Key'
+    required: true
+  datadog-site:
+    description: 'Datadog site (e.g., datadoghq.com, datadoghq.eu)'
+    required: false
+    default: 'datadoghq.com'
+  github-token:
+    description: 'GitHub Token'
+    required: true
+    default: '${{ github.token }}'
+  monitor-tags:
+    description: 'Monitor tags to filter (comma-separated)'
+    required: false
+  labels:
+    description: 'Comma-separated list of labels to add to issues'
+    required: false
+    default: ''
+
+outputs:
+  issues-created:
+    description: 'Number of issues created'
+  issues-updated:
+    description: 'Number of issues updated'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
+
+branding:
+  icon: 'activity'
+  color: 'purple'

@@ -29,11 +29,19 @@ jobs:
       - name: Build
         run: bun run build
 
+      - name: Copy dist files to action directories
+        run: |
+          mkdir -p rum/dist monitor/dist
+          cp packages/rum-action/dist/* rum/dist/
+          cp packages/monitor-action/dist/* monitor/dist/
+
       - name: Upload build artifacts for download
         uses: actions/upload-artifact@v4
         with:
           name: build-preview-${{ github.event.pull_request.number }}
-          path: dist/
+          path: |
+            rum/dist/
+            monitor/dist/
           retention-days: 7
 
       - name: Comment PR with build info
@@ -43,14 +51,22 @@ jobs:
             const fs = require('fs');
             const path = require('path');
 
-            // Get dist/ file info
-            const distPath = 'dist/';
-            const files = fs.readdirSync(distPath);
-            const fileInfo = files.map(file => {
-              const fullPath = path.join(distPath, file);
-              const stats = fs.statSync(fullPath);
-              return `- \`${file}\` (${(stats.size / 1024).toFixed(1)} KB)`;
-            }).join('\n');
+            // Get dist/ file info for both actions
+            const actions = ['rum', 'monitor'];
+            let fileInfo = '';
+            
+            actions.forEach(action => {
+              const distPath = `${action}/dist/`;
+              if (fs.existsSync(distPath)) {
+                const files = fs.readdirSync(distPath);
+                fileInfo += `\n#### ${action.toUpperCase()} Action:\n`;
+                files.forEach(file => {
+                  const fullPath = path.join(distPath, file);
+                  const stats = fs.statSync(fullPath);
+                  fileInfo += `- \`${file}\` (${(stats.size / 1024).toFixed(1)} KB)\n`;
+                });
+              }
+            });
 
             const branchName = context.payload.pull_request.head.ref;
             const repoFullName = context.payload.repository.full_name;
@@ -65,17 +81,24 @@ jobs:
 
             ### 🧪 Testing This Branch
 
-            **In another repository, use:**
+            **For RUM errors:**
             \`\`\`yaml
-            - uses: ${repoFullName}@${branchName}
+            - uses: ${repoFullName}/rum@${branchName}
               with:
-                datadog-api-key: *******
-                datadog-app-key: *******
-                github-token: *******
-                datadog-site: us5.datadoghq.com  # Optional
-                query: '@type:error @service:your-service'
-                date-from: 'now-24h'
-                date-to: 'now'
+                datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
+                datadog-app-key: ${{ secrets.DATADOG_APP_KEY }}
+                github-token: ${{ secrets.GITHUB_TOKEN }}
+                service: 'your-service-name'
+            \`\`\`
+
+            **For Monitor alerts (coming soon):**
+            \`\`\`yaml
+            - uses: ${repoFullName}/monitor@${branchName}
+              with:
+                datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
+                datadog-app-key: ${{ secrets.DATADOG_APP_KEY }}
+                github-token: ${{ secrets.GITHUB_TOKEN }}
+                monitor-tags: 'env:production'
             \`\`\`
 
             ### 📥 Download Build Artifacts
