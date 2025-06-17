@@ -1,0 +1,77 @@
+name: Sync Datadog Errors to GitHub Issues
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # Every 6 hours
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'RUM Service name to filter'
+        required: false
+        type: string
+      date-from:
+        description: 'Start date (e.g., 2025-01-01 or now-24h)'
+        required: false
+        default: 'now-24h'
+        type: string
+      date-to:
+        description: 'End date (e.g., 2025-01-02 or now)'
+        required: false
+        default: 'now'
+        type: string
+      error-handling:
+        description: 'Error handling filter (all, handled, unhandled)'
+        required: false
+        default: 'unhandled'
+        type: choice
+        options:
+          - all
+          - handled
+          - unhandled
+      error-source:
+        description: 'Error source filter (source, network, console)'
+        required: false
+        type: choice
+        options:
+          - source
+          - network
+          - console
+      exclude-noise:
+        description: 'Exclude known noise errors'
+        required: false
+        default: true
+        type: boolean
+      max-issues:
+        description: 'Maximum issues to create'
+        required: false
+        default: 10
+        type: number
+
+jobs:
+  sync-errors:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Sync Datadog Errors to Issues
+        uses: ./
+        with:
+          datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
+          datadog-app-key: ${{ secrets.DATADOG_APP_KEY }}
+          datadog-site: ${{ vars.DATADOG_SITE || 'datadoghq.com' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          service: ${{ github.event.inputs.service }}
+          date-from: ${{ github.event.inputs.date-from || 'now-24h' }}
+          date-to: ${{ github.event.inputs.date-to || 'now' }}
+          error-handling: ${{ github.event.inputs.error-handling || 'unhandled' }}
+          error-source: ${{ github.event.inputs.error-source }}
+          exclude-noise: ${{ github.event.inputs.exclude-noise != 'false' }}
+          max-issues-per-run: ${{ github.event.inputs.max-issues || '10' }}
+          update-existing: 'true'
+          reopen-closed: 'true'
+          labels: 'datadog-error,frontend'
