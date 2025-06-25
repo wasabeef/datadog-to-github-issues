@@ -179,10 +179,14 @@ ${this.formatGeographicDistribution(errorGroup)}
 
 ## ${this.t('technical_info')}
 
-${errorGroup.browsers.size > 0 ? `### ${this.t('browser_distribution')}
+${
+  errorGroup.browsers.size > 0
+    ? `### ${this.t('browser_distribution')}
 ${this.formatBrowserDistribution(errorGroup)}
 
-` : ''}### ${this.t('operating_systems')}
+`
+    : ''
+}### ${this.t('operating_systems')}
 ${this.formatOSDistribution(errorGroup)}
 
 ### ${this.t('device_types')}
@@ -231,9 +235,13 @@ ${JSON.stringify(filterSensitiveContext(errorGroup.representative), null, 2)}
 #### ${this.t('affected_users_new')}
 - **${errorGroup.affectedUsers.size}** ${this.t('unique_users_affected_period')}
 
-${errorGroup.browsers.size > 0 ? `#### ${this.t('browser_distribution_latest')}
+${
+  errorGroup.browsers.size > 0
+    ? `#### ${this.t('browser_distribution_latest')}
 ${this.formatBrowserDistribution(errorGroup)}
-` : ''}
+`
+    : ''
+}
 
 #### ${this.t('geographic_distribution_latest')}
 ${this.formatGeographicDistribution(errorGroup)}
@@ -290,10 +298,14 @@ ${JSON.stringify(filterSensitiveContext(errorGroup.representative), null, 2)}
 
 ### 🔥 ${this.t('latest_impact')}
 
-${errorGroup.browsers.size > 0 ? `#### ${this.t('browser_distribution')}
+${
+  errorGroup.browsers.size > 0
+    ? `#### ${this.t('browser_distribution')}
 ${this.formatBrowserDistribution(errorGroup)}
 
-` : ''}#### ${this.t('geographic_distribution')}
+`
+    : ''
+}#### ${this.t('geographic_distribution')}
 ${this.formatGeographicDistribution(errorGroup)}
 
 ${

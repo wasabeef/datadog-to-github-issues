@@ -121,7 +121,16 @@ export class ErrorProcessor {
   }
 
   private updateGroup(group: ErrorGroup, error: RUMError): void {
-    group.occurrences.push(error);
+    // Limit stored occurrences to prevent memory issues
+    const MAX_STORED_OCCURRENCES = 100;
+    if (group.occurrences.length < MAX_STORED_OCCURRENCES) {
+      group.occurrences.push(error);
+    } else if (Math.random() < 0.1) {
+      // Randomly replace an old occurrence to maintain sample diversity
+      const randomIndex = Math.floor(Math.random() * MAX_STORED_OCCURRENCES);
+      group.occurrences[randomIndex] = error;
+    }
+
     group.count++;
     group.lastSeen = Math.max(group.lastSeen, error.attributes.timestamp);
     group.firstSeen = Math.min(group.firstSeen, error.attributes.timestamp);

@@ -184,15 +184,55 @@ function getInputs(): ActionInputs {
   return {
     datadogApiKey: core.getInput('datadog-api-key', { required: true }),
     datadogAppKey: core.getInput('datadog-app-key', { required: true }),
-    datadogSite: core.getInput('datadog-site') || 'datadoghq.com',
+    datadogSite: (() => {
+      const site = core.getInput('datadog-site') || 'datadoghq.com';
+      const validSites = [
+        'datadoghq.com',
+        'datadoghq.eu',
+        'us3.datadoghq.com',
+        'us5.datadoghq.com',
+        'ap1.datadoghq.com',
+        'ddog-gov.com',
+      ];
+      if (!validSites.includes(site)) {
+        core.warning(
+          `Invalid datadog-site: ${site}, using default: datadoghq.com`
+        );
+        return 'datadoghq.com';
+      }
+      return site;
+    })(),
     githubToken: core.getInput('github-token', { required: true }),
     service: core.getInput('service') || undefined,
     dateFrom: core.getInput('date-from') || 'now-24h',
     dateTo: core.getInput('date-to') || 'now',
-    errorHandling: core.getInput('error-handling') || 'unhandled',
+    errorHandling: (() => {
+      const handling = core.getInput('error-handling') || 'unhandled';
+      const validHandling = ['handled', 'unhandled', 'all'];
+      if (!validHandling.includes(handling)) {
+        core.warning(
+          `Invalid error-handling: ${handling}, using default: unhandled`
+        );
+        return 'unhandled';
+      }
+      return handling;
+    })(),
     errorSource: core.getInput('error-source') || undefined,
     excludeNoise: core.getBooleanInput('exclude-noise') ?? true,
-    maxIssuesPerRun: parseInt(core.getInput('max-issues-per-run') || '10', 10),
+    maxIssuesPerRun: (() => {
+      const value = parseInt(core.getInput('max-issues-per-run') || '10', 10);
+      if (isNaN(value) || value < 1) {
+        core.warning(`Invalid max-issues-per-run value, using default: 10`);
+        return 10;
+      }
+      if (value > 100) {
+        core.warning(
+          `max-issues-per-run is too high (${value}), limiting to 100`
+        );
+        return 100;
+      }
+      return value;
+    })(),
     updateExisting: core.getBooleanInput('update-existing') ?? true,
     reopenClosed: core.getBooleanInput('reopen-closed') ?? true,
     labels: core

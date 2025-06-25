@@ -31,43 +31,35 @@ export class GitHubClient {
 
   async findExistingIssue(errorHash: string): Promise<ExistingIssue | null> {
     try {
-      // Search for open issues first
-      const openIssues = await this.octokit.rest.issues.listForRepo({
-        owner: this.owner,
-        repo: this.repo,
-        state: 'open',
-        per_page: 100,
-      });
+      // Use GitHub search API for better performance and accuracy
+      const searchQuery = `repo:${this.owner}/${this.repo} "error-hash: ${errorHash}" in:body`;
 
-      const openIssue = openIssues.data.find((issue) =>
-        issue.body?.includes(`<!-- error-hash: ${errorHash} -->`)
-      );
+      const searchResponse =
+        await this.octokit.rest.search.issuesAndPullRequests({
+          q: searchQuery,
+          per_page: 10,
+          sort: 'updated',
+          order: 'desc',
+        });
 
-      if (openIssue) {
-        return { issue: openIssue, isOpen: true };
+      if (searchResponse.data.items.length === 0) {
+        return null;
       }
 
-      // Search for recently closed issues (last 30 days)
-      const since = new Date(
-        Date.now() - 30 * 24 * 60 * 60 * 1000
-      ).toISOString();
-      const closedIssues = await this.octokit.rest.issues.listForRepo({
+      // Get the most recently updated issue
+      const foundIssue = searchResponse.data.items[0];
+
+      // Fetch the full issue details to get the correct state
+      const fullIssue = await this.octokit.rest.issues.get({
         owner: this.owner,
         repo: this.repo,
-        state: 'closed',
-        since: since,
-        per_page: 100,
+        issue_number: foundIssue.number,
       });
 
-      const closedIssue = closedIssues.data.find((issue) =>
-        issue.body?.includes(`<!-- error-hash: ${errorHash} -->`)
-      );
-
-      if (closedIssue) {
-        return { issue: closedIssue, isOpen: false };
-      }
-
-      return null;
+      return {
+        issue: fullIssue.data,
+        isOpen: fullIssue.data.state === 'open',
+      };
     } catch (error) {
       core.error(`Failed to search for existing issues: ${error}`);
       return null;
