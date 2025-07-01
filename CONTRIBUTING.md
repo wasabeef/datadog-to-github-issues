@@ -1,8 +1,8 @@
 # Contributing to Datadog to GitHub Issues
 
-🎉 **Contributions are welcome!** Please feel free to submit a Pull Request.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 🛠️ Development Setup
+## Development Setup
 
 ### Prerequisites
 
@@ -52,36 +52,53 @@ bun run test
    bun run lint
    ```
 
-## 📁 Project Structure
+## Project Structure
+
+This is a monorepo managed by Turborepo:
 
 ```text
 datadog-to-github-issues/
-├── src/
-│   ├── index.ts             # Main entry point
-│   ├── datadog-client.ts    # Datadog RUM API integration
-│   ├── github-client.ts     # GitHub API integration
-│   ├── error-processor.ts   # Error processing and grouping
-│   ├── issue-formatter.ts   # GitHub issue formatting
-│   └── utils/
-│       └── security.ts      # Security utilities (masking sensitive data)
-├── tests/
-│   ├── error-processor.test.ts  # Unit tests
-│   ├── issue-formatter.test.ts  # Unit tests
-│   ├── security.test.ts         # Security tests
-│   └── local-runner.js          # Local testing script
+├── packages/
+│   ├── core/                    # Shared utilities and types
+│   │   ├── src/
+│   │   │   ├── index.ts         # Core exports
+│   │   │   ├── types.ts         # Shared TypeScript types
+│   │   │   ├── constants.ts     # Shared constants
+│   │   │   └── utils/
+│   │   │       └── security.ts  # Security utilities
+│   │   └── package.json
+│   ├── rum-action/              # RUM error monitoring action
+│   │   ├── src/
+│   │   │   ├── index.ts         # Main entry point
+│   │   │   ├── datadog-client.ts # Datadog RUM API integration
+│   │   │   ├── github-client.ts  # GitHub API integration
+│   │   │   ├── error-processor.ts # Error processing and grouping
+│   │   │   └── issue-formatter.ts # GitHub issue formatting
+│   │   ├── tests/               # Unit tests
+│   │   ├── dist/                # Built files (generated)
+│   │   └── package.json
+│   └── monitor-action/          # Monitor alert action (placeholder)
+│       ├── src/
+│       ├── tests/
+│       └── package.json
+├── rum/                         # Action entry point for rum@v1
+│   ├── action.yml
+│   └── dist/                    # Built files (copied from packages)
+├── monitor/                     # Action entry point for monitor@v1
+│   ├── action.yml
+│   └── dist/                    # Built files (copied from packages)
 ├── .github/
 │   └── workflows/
-│       ├── ci.yml           # CI pipeline (test, lint, build)
-│       ├── test.yml         # Action testing workflow
-│       └── release.yml      # Release automation
-├── dist/                    # Built JavaScript files (generated on release)
-├── action.yml               # GitHub Action metadata
-├── package.json             # Dependencies and scripts
-├── tsconfig.json            # TypeScript configuration
-└── README.md                # Project documentation
+│       ├── ci.yml               # CI pipeline
+│       ├── release.yml          # Release automation
+│       └── examples/            # Example workflows for users
+├── turbo.json                   # Turborepo configuration
+├── package.json                 # Root package.json
+├── bun.lockb                    # Bun lock file
+└── README.md                    # Project documentation
 ```
 
-## 🔄 Development Workflow
+## Development Workflow
 
 ### 1. Feature Development
 
@@ -94,10 +111,23 @@ datadog-to-github-issues/
 2. **Develop and test**:
 
    ```bash
-   bun run test     # Run tests
-   bun run lint     # Check code quality
-   bun run format   # Format code
-   bun run build    # Verify build
+   # Run all tests across packages
+   bun run test
+   
+   # Run tests for specific package
+   cd packages/rum-action && bun test
+   
+   # Check code quality
+   bun run lint
+   
+   # Format code
+   bun run format
+   
+   # Build all packages
+   bun run build
+   
+   # Build and check output
+   bun run build:check
    ```
 
 3. **Create Pull Request**: Create PR on GitHub
@@ -113,10 +143,11 @@ datadog-to-github-issues/
 
 - **TypeScript**: Fix type errors to maintain type safety
 - **ESLint**: Check code style with `bun run lint`
-- **Prettier**: Consistent code formatting
+- **Prettier**: Consistent code formatting with `bun run format`
 - **Security**: Ensure sensitive data is properly masked
+- **Turborepo**: Leverage caching for faster builds
 
-## 🏷️ Release Process & Tagging
+## Release Process & Tagging
 
 This project adopts **release-time automation**.
 
@@ -175,7 +206,7 @@ Follows [Semantic Versioning](https://semver.org/):
 - **MINOR** (`v1.1.0`): Backward-compatible new features
 - **PATCH** (`v1.0.1`): Backward-compatible bug fixes
 
-## 🧪 Testing Guidelines
+## Testing Guidelines
 
 ### Unit Tests
 
@@ -187,8 +218,16 @@ bun run test
 ### Local Testing
 
 ```bash
-# Test with actual Datadog API (requires API keys)
-node tests/local-runner.js
+# Test RUM action with actual Datadog API (requires .env file)
+bun local:rum
+
+# Test from package directory
+cd packages/rum-action && bun run local
+
+# Test with specific configuration
+cp .env.rum.example .env
+# Edit .env with your credentials
+bun local:rum
 ```
 
 ### Integration Tests
@@ -205,7 +244,7 @@ gh workflow run test.yml
 3. **Edge Cases**: Test error handling scenarios
 4. **Security Tests**: Ensure sensitive data is properly masked
 
-## 📝 Pull Request Guidelines
+## Pull Request Guidelines
 
 ### When Creating PRs
 
@@ -241,7 +280,7 @@ Add support for new Datadog RUM error types
 None
 ```
 
-## 🐛 Issue Reporting
+## Issue Reporting
 
 When reporting bugs or suggesting improvements:
 
@@ -250,7 +289,7 @@ When reporting bugs or suggesting improvements:
 3. **Environment details**: OS, Node.js/Bun versions, Datadog configuration
 4. **Logs**: Include relevant error logs or screenshots (with sensitive data masked)
 
-## 🔒 Security Guidelines
+## Security Guidelines
 
 - **Never commit API keys or secrets**
 - **Use GitHub Secrets for sensitive data**
@@ -258,7 +297,7 @@ When reporting bugs or suggesting improvements:
 - **Review security utilities before modifying**
 - **Test security masking with real data**
 
-## 🙏 Code of Conduct
+## Code of Conduct
 
 To maintain a respectful environment for everyone participating:
 
@@ -267,7 +306,7 @@ To maintain a respectful environment for everyone participating:
 - Communicate kindly and politely
 - Foster an environment for learning and growth
 
-## 📦 Development & Testing Builds
+## Development & Testing Builds
 
 ### Local Development
 
@@ -307,21 +346,21 @@ This project uses a streamlined workflow for different scenarios:
 When testing unreleased features, you can reference any branch in your workflows:
 
 ```yaml
-# Use ANY development branch (auto-builds dist/)
-- uses: wasabeef/datadog-to-github-issues@feat-new-feature
-- uses: wasabeef/datadog-to-github-issues@fix-bug-123
-- uses: wasabeef/datadog-to-github-issues@refactor-core
+# Use specific action type with branch
+- uses: wasabeef/datadog-to-github-issues/rum@feat-new-feature
+- uses: wasabeef/datadog-to-github-issues/rum@fix-bug-123
+- uses: wasabeef/datadog-to-github-issues/monitor@refactor-core
 
 # Use a specific commit SHA
-- uses: wasabeef/datadog-to-github-issues@a1b2c3d4e5f6789
+- uses: wasabeef/datadog-to-github-issues/rum@a1b2c3d4e5f6789
 
 # Use a PR for testing
-- uses: wasabeef/datadog-to-github-issues@refs/pull/42/head
+- uses: wasabeef/datadog-to-github-issues/rum@refs/pull/42/head
 ```
 
 **The PR comment will show you the exact usage instructions for your branch!**
 
-## 🎯 Development Roadmap
+## Development Roadmap
 
 Planned developments:
 
@@ -331,4 +370,4 @@ Planned developments:
 - [ ] Advanced filtering and grouping options
 - [ ] Integration with other monitoring tools
 
-If you have questions or need support, please feel free to create an [Issue](https://github.com/wasabeef/datadog-to-github-issues/issues)!
+Questions? Please create an [Issue](https://github.com/wasabeef/datadog-to-github-issues/issues).

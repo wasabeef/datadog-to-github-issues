@@ -19,6 +19,7 @@ datadog-to-github-issues/
 │   │   │   ├── utils/
 │   │   │   │   └── security.ts
 │   │   │   ├── types.ts
+│   │   │   ├── constants.ts
 │   │   │   └── index.ts
 │   │   └── package.json
 │   ├── rum-action/         # RUM error monitoring action
@@ -28,6 +29,7 @@ datadog-to-github-issues/
 │   │   │   ├── github-client.ts
 │   │   │   ├── issue-formatter.ts
 │   │   │   ├── translations.ts
+│   │   │   ├── error-status-analyzer.ts
 │   │   │   └── index.ts
 │   │   ├── tests/
 │   │   └── package.json

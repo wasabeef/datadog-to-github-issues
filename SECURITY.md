@@ -8,7 +8,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability within this GitHub Action, please send an email to the maintainer. All security vulnerabilities will be promptly addressed.
+If you discover a security vulnerability within this GitHub Action, please create a private security advisory via GitHub's Security tab or email security@wasabeef.jp.
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
@@ -23,7 +23,7 @@ If you discover a security vulnerability within this GitHub Action, please send 
 
 - **Initial response**: Within 48 hours
 - **Status update**: Within 7 days
-- **Resolution**: Varies based on complexity
+- **Resolution**: Critical issues within 14 days, others within 30 days
 
 ## Security Considerations
 
@@ -58,10 +58,10 @@ This GitHub Action:
 ### Information Disclosure Prevention
 
 - **Email Masking**: `john.doe@example.com` → `joh***@example.com`
-- **IP Address Masking**: `192.168.1.100` → `xxx.xxx.xxx.xxx`
-- **UUID Partial Masking**: Partially masks UUIDs to prevent correlation
+- **Phone Numbers**: `090-1234-5678` → `0**-****-****`
+- **IP Preservation**: IP addresses are NOT masked (required for debugging)
 - **Token Redaction**: API keys and tokens shown as `[REDACTED]`
-- **Stack Trace Sanitization**: Removes sensitive paths and data
+- **Credit Cards**: `1234-5678-9012-3456` → `****-****-****-****`
 
 ## Best Practices
 
@@ -89,19 +89,19 @@ When using this action:
 
 4. **Regular Updates**
    - Keep the action updated to the latest version
-   - Monitor security advisories
-   - Review changes in new releases
+   - Monitor GitHub security advisories and CVE database
+   - Test updates in staging environment before production
 
 ## Known Security Considerations
 
-While this action implements comprehensive security measures, users should be aware of:
+The action masks most sensitive data automatically, but be aware of:
 
 - **Error Context**: Datadog RUM errors may contain user data or system information
 - **Stack Traces**: May reveal application structure or sensitive paths
 - **URL Parameters**: May contain user IDs or sensitive query parameters
 - **Session Data**: May include user session information
 
-**All of these are mitigated through our security utilities**, but users should:
+To minimize risk:
 
 - Review generated issues periodically
 - Ensure repository visibility matches data sensitivity
@@ -114,10 +114,10 @@ The action includes comprehensive security tests:
 
 ```bash
 # Run security-specific tests
-bun run test tests/security.test.ts
+bun run test packages/core/tests/security.test.ts
 
-# Verify masking functionality
-node tests/local-runner.js
+# Test with real data (requires .env)
+bun local:rum
 ```
 
-These tests verify that sensitive data is properly masked in various scenarios.
+Security tests cover email masking, phone number redaction, API key detection, and credit card filtering across 20+ test cases.

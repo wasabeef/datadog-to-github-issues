@@ -2,13 +2,53 @@ import * as core from '@actions/core';
 import { GitHub } from '@actions/github/lib/utils';
 import { ErrorGroup } from './error-processor';
 import { IssueFormatter } from './issue-formatter';
+import { API_LIMITS, ISSUE_MANAGEMENT } from '@datadog-to-github-issues/core';
 
 export interface ExistingIssue {
   issue: any;
   isOpen: boolean;
 }
 
+/**
+ * Client for managing GitHub Issues related to Datadog RUM errors
+ *
+ * @remarks
+ * This client handles all GitHub API interactions including:
+ * - Creating new issues for errors
+ * - Updating existing issues with new occurrences
+ * - Reopening closed issues when errors recur
+ * - Managing issue labels based on error severity
+ *
+ * @example
+ * ```typescript
+ * const octokit = github.getOctokit(token);
+ * const githubClient = new GitHubClient(octokit, 'owner', 'repo');
+ *
+ * // Check if issue already exists
+ * const existing = await githubClient.findExistingIssue(errorHash);
+ *
+ * // Create or update issue
+ * if (existing) {
+ *   await githubClient.updateExistingIssue(existing, errorGroup, formatter, inputs);
+ * } else {
+ *   await githubClient.createIssue(errorGroup, formatter, inputs);
+ * }
+ * ```
+ */
 export class GitHubClient {
+  /**
+   * Creates a new GitHub client instance
+   *
+   * @param octokit - Authenticated Octokit instance
+   * @param owner - Repository owner (username or organization)
+   * @param repo - Repository name
+   *
+   * @example
+   * ```typescript
+   * const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
+   * const client = new GitHubClient(octokit, 'myorg', 'myrepo');
+   * ```
+   */
   constructor(
     private octokit: InstanceType<typeof GitHub>,
     private owner: string,
@@ -37,7 +77,7 @@ export class GitHubClient {
       const searchResponse =
         await this.octokit.rest.search.issuesAndPullRequests({
           q: searchQuery,
-          per_page: 10,
+          per_page: API_LIMITS.GITHUB_SEARCH_PER_PAGE,
           sort: 'updated',
           order: 'desc',
         });

@@ -4,6 +4,7 @@ import { GitHubClient } from './github-client';
 import { DatadogClient } from './datadog-client';
 import { ErrorProcessor } from './error-processor';
 import { IssueFormatter } from './issue-formatter';
+import { ISSUE_MANAGEMENT } from '@datadog-to-github-issues/core';
 
 /**
  * Configuration inputs for the GitHub Action
@@ -220,16 +221,22 @@ function getInputs(): ActionInputs {
     errorSource: core.getInput('error-source') || undefined,
     excludeNoise: core.getBooleanInput('exclude-noise') ?? true,
     maxIssuesPerRun: (() => {
-      const value = parseInt(core.getInput('max-issues-per-run') || '10', 10);
+      const value = parseInt(
+        core.getInput('max-issues-per-run') ||
+          String(ISSUE_MANAGEMENT.MAX_ISSUES_PER_RUN_DEFAULT),
+        10
+      );
       if (isNaN(value) || value < 1) {
-        core.warning(`Invalid max-issues-per-run value, using default: 10`);
-        return 10;
-      }
-      if (value > 100) {
         core.warning(
-          `max-issues-per-run is too high (${value}), limiting to 100`
+          `Invalid max-issues-per-run value, using default: ${ISSUE_MANAGEMENT.MAX_ISSUES_PER_RUN_DEFAULT}`
         );
-        return 100;
+        return ISSUE_MANAGEMENT.MAX_ISSUES_PER_RUN_DEFAULT;
+      }
+      if (value > ISSUE_MANAGEMENT.MAX_ISSUES_PER_RUN_LIMIT) {
+        core.warning(
+          `max-issues-per-run is too high (${value}), limiting to ${ISSUE_MANAGEMENT.MAX_ISSUES_PER_RUN_LIMIT}`
+        );
+        return ISSUE_MANAGEMENT.MAX_ISSUES_PER_RUN_LIMIT;
       }
       return value;
     })(),

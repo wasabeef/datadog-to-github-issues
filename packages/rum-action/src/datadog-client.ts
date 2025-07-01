@@ -1,8 +1,34 @@
 import * as core from '@actions/core';
 import { v2, client } from '@datadog/datadog-api-client';
+import { API_LIMITS } from '@datadog-to-github-issues/core';
 
 /**
  * Datadog RUM error data structure
+ *
+ * @remarks
+ * This interface represents the structure of error events returned by the Datadog RUM API.
+ * Each error contains detailed information about browser errors, crashes, and exceptions.
+ *
+ * @example
+ * ```typescript
+ * const error: RUMError = {
+ *   id: "unique-error-id",
+ *   type: "rum",
+ *   attributes: {
+ *     timestamp: 1234567890,
+ *     service: "frontend-app",
+ *     tags: ["env:production", "version:1.0.0"],
+ *     attributes: {
+ *       error: {
+ *         message: "Cannot read property 'x' of undefined",
+ *         type: "TypeError",
+ *         source: "source",
+ *         handling: "unhandled"
+ *       }
+ *     }
+ *   }
+ * }
+ * ```
  */
 export interface RUMError {
   id: string;
@@ -74,15 +100,41 @@ export interface RUMError {
 
 /**
  * Client for interacting with Datadog RUM API
+ *
+ * @remarks
+ * This client provides methods to fetch and process RUM (Real User Monitoring) errors
+ * from Datadog. It handles authentication, pagination, and rate limiting automatically.
+ *
+ * @example
+ * ```typescript
+ * const client = new DatadogClient(apiKey, appKey, 'datadoghq.com');
+ * const errors = await client.fetchRUMErrors(
+ *   '@type:error AND service:frontend',
+ *   'now-24h',
+ *   'now'
+ * );
+ * ```
  */
 export class DatadogClient {
   private apiInstance: v2.RUMApi;
 
   /**
    * Creates a new Datadog client instance
-   * @param apiKey - Datadog API key
+   *
+   * @param apiKey - Datadog API key with RUM read permissions
    * @param appKey - Datadog Application key
    * @param site - Datadog site (default: datadoghq.com)
+   *
+   * @throws {Error} If API keys are invalid or missing
+   *
+   * @example
+   * ```typescript
+   * // For US1 region (default)
+   * const client = new DatadogClient(apiKey, appKey);
+   *
+   * // For EU region
+   * const client = new DatadogClient(apiKey, appKey, 'datadoghq.eu');
+   * ```
    */
   constructor(apiKey: string, appKey: string, site: string = 'datadoghq.com') {
     const configuration = client.createConfiguration({
@@ -100,11 +152,37 @@ export class DatadogClient {
   }
 
   /**
-   * Fetches RUM errors from Datadog API
+   * Fetches RUM errors from Datadog API with automatic pagination
+   *
    * @param query - Datadog query string for filtering errors
-   * @param dateFrom - Start time for the query (e.g., 'now-24h')
-   * @param dateTo - End time for the query (e.g., 'now')
-   * @returns Array of RUM errors
+   * @param dateFrom - Start time for the query (e.g., 'now-24h', '2024-01-01')
+   * @param dateTo - End time for the query (e.g., 'now', '2024-01-02')
+   *
+   * @returns Promise resolving to array of RUM errors
+   *
+   * @throws {Error} If API request fails or rate limit is exceeded
+   *
+   * @example
+   * ```typescript
+   * // Fetch all errors from the last 24 hours
+   * const errors = await client.fetchRUMErrors(
+   *   '@type:error AND service:frontend',
+   *   'now-24h',
+   *   'now'
+   * );
+   *
+   * // Fetch unhandled errors only
+   * const unhandledErrors = await client.fetchRUMErrors(
+   *   '@type:error AND @error.handling:unhandled',
+   *   'now-7d',
+   *   'now'
+   * );
+   * ```
+   *
+   * @remarks
+   * - Results are limited to 1000 events per page
+   * - Maximum 10 pages are fetched (10,000 events total)
+   * - Events are sorted by timestamp in descending order
    */
   async fetchRUMErrors(
     query: string,
@@ -113,8 +191,8 @@ export class DatadogClient {
   ): Promise<RUMError[]> {
     const errors: RUMError[] = [];
     let cursor: string | undefined;
-    const limit = 100;
-    const maxPages = 10; // Safety limit
+    const limit = API_LIMITS.RUM_EVENTS_PER_PAGE;
+    const maxPages = API_LIMITS.MAX_PAGES; // Safety limit
 
     try {
       for (let page = 0; page < maxPages; page++) {

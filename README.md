@@ -7,14 +7,12 @@
   <a href="README.ja.md">日本語版</a>
 </p>
 
-A collection of GitHub Actions that integrate Datadog with GitHub Issues:
+GitHub Actions that create issues from Datadog RUM errors and monitor alerts.
 
 - **RUM Action**: Creates issues from Datadog RUM (Real User Monitoring) errors
 - **Monitor Action**: Creates issues from Datadog Monitor alerts (coming soon)
 
-This helps teams track and manage errors and alerts from Datadog directly within their GitHub workflow.
-
-## 🚀 Features
+## Features
 
 - **Automatic Error Detection**: Fetches and creates GitHub Issues from Datadog RUM errors
 - **Smart Grouping & Updates**: Groups similar errors and updates existing issues when they recur
@@ -22,24 +20,17 @@ This helps teams track and manage errors and alerts from Datadog directly within
 - **Security & Privacy**: Automatically masks sensitive data (emails, IPs, tokens)
 - **Flexible Configuration**: Customizable labels, multiple languages (EN/JP), and conditional labeling
 
-## 💡 Motivation
+## Motivation
 
-Frontend errors can happen at any time and often go unnoticed until users complain. This GitHub Action bridges the gap between error monitoring and issue tracking by automatically creating GitHub Issues from Datadog RUM errors.
+Frontend errors often go unnoticed until users complain. This GitHub Action automatically creates GitHub Issues from Datadog RUM errors, enabling proactive error management within your GitHub workflow.
 
-**Key benefits:**
-
-- **Proactive Error Management**: Catch errors before users report them
-- **Centralized Workflow**: Keep error tracking within GitHub
-- **Rich Context**: All error details in one place
-- **Team Collaboration**: Discuss and assign errors like any other issue
-
-## 📋 Prerequisites
+## Prerequisites
 
 - A Datadog account with RUM enabled
 - API and Application keys with RUM read permissions
 - GitHub repository with Actions enabled
 
-## 🛠️ Setup
+## Setup
 
 ### Step 1: Create Datadog API Keys
 
@@ -60,7 +51,7 @@ Frontend errors can happen at any time and often go unnoticed until users compla
    - **Name**: `DATADOG_APP_KEY`
    - **Value**: Your Datadog Application key from Step 1
 
-**🔒 Security**: Never commit these keys directly to your repository. Always use GitHub Secrets.
+**Security**: Never commit these keys directly to your repository. Always use GitHub Secrets.
 
 ### Step 3: Create Workflow File
 
@@ -93,7 +84,7 @@ jobs:
           service: 'your-service-name'
 ```
 
-## 📖 Usage
+## Usage
 
 Once set up, the action will automatically:
 
@@ -108,7 +99,7 @@ Once set up, the action will automatically:
 **Basic Setup:**
 
 ```yaml
-- uses: wasabeef/datadog-to-github-issues@v1
+- uses: wasabeef/datadog-to-github-issues/rum@v1
   with:
     datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
     datadog-app-key: ${{ secrets.DATADOG_APP_KEY }}
@@ -119,7 +110,7 @@ Once set up, the action will automatically:
 **Advanced Setup:**
 
 ```yaml
-- uses: wasabeef/datadog-to-github-issues@v1
+- uses: wasabeef/datadog-to-github-issues/rum@v1
   with:
     datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
     datadog-app-key: ${{ secrets.DATADOG_APP_KEY }}
@@ -163,7 +154,7 @@ at renderWithHooks (vendor.bundle.js:12345:18)
 
 </details>
 
-## 🔧 Configuration
+## Configuration
 
 ### Required Inputs
 
@@ -202,13 +193,11 @@ at renderWithHooks (vendor.bundle.js:12345:18)
 
 </details>
 
-### Key Features
+- Multiple languages: Set `language: 'ja'` for Japanese with JST timestamps
+- Smart labeling: Different labels for crashes (`fatal-labels`) vs regular errors (`non-fatal-labels`)
+- Noise filtering: Automatically excludes common noise errors (ChunkLoadError, etc.)
 
-- **Multiple Languages**: Set `language: 'ja'` for Japanese with JST timestamps
-- **Smart Labeling**: Different labels for crashes (`fatal-labels`) vs regular errors (`non-fatal-labels`)
-- **Noise Filtering**: Automatically excludes common noise errors (ChunkLoadError, etc.)
-
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -228,9 +217,9 @@ at renderWithHooks (vendor.bundle.js:12345:18)
    - Verify GitHub Actions has `issues: write` permission
    - Check if branch protection rules are blocking the action
 
-## 🔒 Security & Privacy
+## Security & Privacy
 
-This action implements comprehensive data protection to ensure sensitive information is never exposed in GitHub Issues:
+The action automatically masks sensitive information in GitHub Issues:
 
 ### Automatically Masked Data
 
@@ -270,15 +259,15 @@ The following are **NOT** masked to maintain debugging capability:
 
 For security concerns or to report vulnerabilities, please see [SECURITY.md](SECURITY.md).
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing guidelines, and contribution process.
 
-## 🐛 Issues & Support
+## Issues & Support
 
 If you encounter any issues or have questions:
 
@@ -286,8 +275,8 @@ If you encounter any issues or have questions:
 2. Create a new issue with detailed information
 3. Include relevant logs and configuration
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
-- [Datadog RUM](https://www.datadoghq.com/product/real-user-monitoring/) for providing comprehensive error monitoring
-- GitHub Actions community for inspiration and best practices
+- [Datadog RUM](https://www.datadoghq.com/product/real-user-monitoring/) for error monitoring
+- GitHub Actions community
 

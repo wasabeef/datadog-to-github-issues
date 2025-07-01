@@ -1,5 +1,6 @@
 import * as crypto from 'crypto';
 import { RUMError } from './datadog-client';
+import { API_LIMITS, STACK_TRACE } from '@datadog-to-github-issues/core';
 
 /**
  * Grouped error data with aggregated statistics
@@ -23,12 +24,48 @@ export interface ErrorGroup {
 
 /**
  * Processes and groups RUM errors for GitHub issue creation
+ *
+ * @remarks
+ * This processor groups similar errors together using a normalized hash based on:
+ * - Error type
+ * - Error message (normalized)
+ * - Error source
+ * - Stack trace (first 5 lines, normalized)
+ *
+ * The normalization process removes variable parts like IDs, timestamps, and line numbers
+ * to ensure similar errors are grouped together even if they occur in different contexts.
+ *
+ * @example
+ * ```typescript
+ * const processor = new ErrorProcessor();
+ * const errorGroups = processor.groupErrors(rumErrors);
+ *
+ * // Process each error group
+ * for (const [hash, group] of errorGroups) {
+ *   console.log(`Error ${hash}: ${group.count} occurrences`);
+ * }
+ * ```
  */
 export class ErrorProcessor {
   /**
    * Groups similar errors together based on error characteristics
+   *
    * @param errors - Array of RUM errors to process
    * @returns Map of error hash to grouped error data
+   *
+   * @example
+   * ```typescript
+   * const errors = await datadogClient.fetchRUMErrors(query, from, to);
+   * const groups = processor.groupErrors(errors);
+   * console.log(`Found ${groups.size} unique error types`);
+   * ```
+   *
+   * @remarks
+   * The grouping process:
+   * 1. Generates a normalized hash for each error
+   * 2. Groups errors with the same hash
+   * 3. Aggregates statistics (count, users, browsers, etc.)
+   * 4. Tracks first and last occurrence times
    */
   groupErrors(errors: RUMError[]): Map<string, ErrorGroup> {
     const groups = new Map<string, ErrorGroup>();
@@ -122,7 +159,7 @@ export class ErrorProcessor {
 
   private updateGroup(group: ErrorGroup, error: RUMError): void {
     // Limit stored occurrences to prevent memory issues
-    const MAX_STORED_OCCURRENCES = 100;
+    const MAX_STORED_OCCURRENCES = API_LIMITS.MAX_STORED_OCCURRENCES;
     if (group.occurrences.length < MAX_STORED_OCCURRENCES) {
       group.occurrences.push(error);
     } else if (Math.random() < 0.1) {

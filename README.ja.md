@@ -7,14 +7,12 @@
   <a href="README.md">English</a>
 </p>
 
-Datadog と GitHub Issues を統合する GitHub Actions のコレクション：
+Datadog RUM エラーやモニターアラートから GitHub Issue を作成する GitHub Actions。
 
 - **RUM Action**: Datadog RUM（Real User Monitoring）エラーから Issue を作成
 - **Monitor Action**: Datadog Monitor アラートから Issue を作成（準備中）
 
-これにより、チームは Datadog のエラーとアラートを GitHub ワークフロー内で直接追跡・管理できます。
-
-## 🚀 機能
+## 機能
 
 - **自動エラー検出**: Datadog RUM エラーから GitHub Issue を自動作成
 - **スマートグループ化と更新**: 類似エラーをグループ化し、再発時に Issue を更新
@@ -22,24 +20,17 @@ Datadog と GitHub Issues を統合する GitHub Actions のコレクション�
 - **セキュリティとプライバシー**: 機密データ（メール、IP、トークン）を自動マスキング
 - **柔軟な設定**: カスタマイズ可能なラベル、複数言語（EN/JP）、条件付きラベル
 
-## 💡 動機
+## 動機
 
-フロントエンドエラーはいつでも発生する可能性があり、ユーザーが苦情を言うまで気づかないことがよくあります。この GitHub Action は、Datadog RUM エラーから自動的に GitHub Issue を作成することで、エラー監視と課題追跡の間のギャップを埋めます。
+フロントエンドエラーはユーザーが苦情を言うまで気づかないことがよくあります。この GitHub Action は、Datadog RUM エラーから自動的に GitHub Issue を作成し、GitHub ワークフロー内で積極的なエラー管理を可能にします。
 
-**主な利点:**
-
-- **積極的なエラー管理**: ユーザーが報告する前にエラーをキャッチ
-- **統一されたワークフロー**: GitHub 内でエラー追跡を維持
-- **豊富なコンテキスト**: すべてのエラー詳細を一箇所に
-- **チーム協力**: 他の課題と同様にエラーについて議論・割り当て
-
-## 📋 前提条件
+## 前提条件
 
 - RUM が有効化された Datadog アカウント
 - RUM 読み取り権限を持つ API キーとアプリケーションキー
 - GitHub Actions が有効なリポジトリ
 
-## 🛠️ セットアップ
+## セットアップ
 
 ### ステップ 1: Datadog API キーの作成
 
@@ -60,7 +51,7 @@ Datadog と GitHub Issues を統合する GitHub Actions のコレクション�
    - **Name**: `DATADOG_APP_KEY`
    - **Value**: ステップ 1 の Datadog アプリケーションキー
 
-**🔒 セキュリティ**: これらのキーを直接リポジトリにコミットしないでください。常に GitHub Secrets を使用してください。
+**セキュリティ**: これらのキーを直接リポジトリにコミットしないでください。常に GitHub Secrets を使用してください。
 
 ### ステップ 3: ワークフローファイルの作成
 
@@ -93,7 +84,7 @@ jobs:
           service: 'your-service-name'
 ```
 
-## 📖 使用方法
+## 使用方法
 
 セットアップが完了すると、アクションは自動的に以下を実行します：
 
@@ -108,7 +99,7 @@ jobs:
 **基本設定:**
 
 ```yaml
-- uses: wasabeef/datadog-to-github-issues@v1
+- uses: wasabeef/datadog-to-github-issues/rum@v1
   with:
     datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
     datadog-app-key: ${{ secrets.DATADOG_APP_KEY }}
@@ -119,7 +110,7 @@ jobs:
 **高度な設定:**
 
 ```yaml
-- uses: wasabeef/datadog-to-github-issues@v1
+- uses: wasabeef/datadog-to-github-issues/rum@v1
   with:
     datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
     datadog-app-key: ${{ secrets.DATADOG_APP_KEY }}
@@ -163,7 +154,7 @@ at renderWithHooks (vendor.bundle.js:12345:18)
 
 </details>
 
-## 🔧 設定
+## 設定
 
 ### 必須パラメータ
 
@@ -202,13 +193,11 @@ at renderWithHooks (vendor.bundle.js:12345:18)
 
 </details>
 
-### 主要機能
+- 複数言語対応: `language: 'ja'` で日本語 + JST タイムスタンプ
+- スマートラベリング: クラッシュ用 (`fatal-labels`) と通常エラー用 (`non-fatal-labels`) で異なるラベル
+- ノイズフィルタリング: ChunkLoadError などの一般的ノイズエラーを自動除外
 
-- **複数言語対応**: `language: 'ja'` で日本語 + JST タイムスタンプ
-- **スマートラベリング**: クラッシュ用 (`fatal-labels`) と通常エラー用 (`non-fatal-labels`) で異なるラベル
-- **ノイズフィルタリング**: ChunkLoadError などの一般的ノイズエラーを自動除外
-
-## 🔍 トラブルシューティング
+## トラブルシューティング
 
 ### よくある問題
 
@@ -228,9 +217,9 @@ at renderWithHooks (vendor.bundle.js:12345:18)
    - GitHub Actions に `issues: write` 権限があることを確認
    - ブランチ保護ルールがアクションをブロックしていないか確認
 
-## 🔒 セキュリティとプライバシー
+## セキュリティとプライバシー
 
-このアクションは、GitHub Issue に機密情報が露出しないよう、包括的なデータ保護を実装しています：
+このアクションは GitHub Issue 内の機密情報を自動的にマスクします：
 
 ### 自動的にマスクされるデータ
 
@@ -270,15 +259,15 @@ at renderWithHooks (vendor.bundle.js:12345:18)
 
 セキュリティに関する懸念や脆弱性を報告する場合は、[SECURITY.md](SECURITY.md) を参照してください。
 
-## 📝 ライセンス
+## ライセンス
 
 このプロジェクトは MIT ライセンスの下でライセンスされています - 詳細は [LICENSE](LICENSE) ファイルを参照してください。
 
-## 🤝 貢献
+## 貢献
 
 貢献を歓迎します！開発セットアップ、テストガイドライン、貢献プロセスの詳細については [CONTRIBUTING.md](CONTRIBUTING.md) を参照してください。
 
-## 🐛 問題とサポート
+## 問題とサポート
 
 問題が発生した場合や質問がある場合：
 
@@ -286,8 +275,8 @@ at renderWithHooks (vendor.bundle.js:12345:18)
 2. 詳細情報を含む新しい Issue を作成
 3. 関連するログと設定を含める
 
-## 🙏 謝辞
+## 謝辞
 
-- [Datadog RUM](https://www.datadoghq.com/product/real-user-monitoring/) 包括的なエラー監視を提供
-- GitHub Actions コミュニティのインスピレーションとベストプラクティス
+- [Datadog RUM](https://www.datadoghq.com/product/real-user-monitoring/) エラー監視
+- GitHub Actions コミュニティ
 
