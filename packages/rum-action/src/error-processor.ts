@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 import { RUMError } from './datadog-client';
-import { API_LIMITS, STACK_TRACE } from '@datadog-to-github-issues/core';
+import { API_LIMITS } from '@datadog-to-github-issues/core';
 
 /**
  * Grouped error data with aggregated statistics
