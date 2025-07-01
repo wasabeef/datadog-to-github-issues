@@ -1,0 +1,26 @@
+name: Datadog RUM エラー同期（日本語版）
+
+on:
+  schedule:
+    - cron: '0 1 * * *' # 毎日午前10時（JST）
+
+jobs:
+  sync-errors:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: wasabeef/datadog-to-github-issues/rum@v1
+        with:
+          datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
+          datadog-app-key: ${{ secrets.DATADOG_APP_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          service: 'frontend-app'
+          language: 'ja'
+          labels: 'datadog,エラー,フロントエンド'
+          fatal-labels: 'クリティカル,緊急'
+          title-prefix: '[DD]'

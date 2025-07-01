@@ -59,7 +59,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Sync Datadog Errors to Issues
-        uses: ./
+        uses: wasabeef/datadog-to-github-issues/rum@v1
         with:
           datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
           datadog-app-key: ${{ secrets.DATADOG_APP_KEY }}

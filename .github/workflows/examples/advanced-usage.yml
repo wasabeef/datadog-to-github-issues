@@ -1,0 +1,41 @@
+name: Advanced Datadog RUM Error Sync
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # Every 6 hours
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'RUM Service name to filter'
+        required: false
+        type: string
+      date-from:
+        description: 'Start date (e.g., 2025-01-01 or now-24h)'
+        required: false
+        default: 'now-24h'
+        type: string
+
+jobs:
+  sync-errors:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: wasabeef/datadog-to-github-issues/rum@v1
+        with:
+          datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
+          datadog-app-key: ${{ secrets.DATADOG_APP_KEY }}
+          datadog-site: ${{ vars.DATADOG_SITE || 'datadoghq.com' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          service: ${{ github.event.inputs.service || 'frontend-app' }}
+          date-from: ${{ github.event.inputs.date-from || 'now-24h' }}
+          language: 'en'
+          labels: 'datadog,frontend,bug'
+          fatal-labels: 'critical,p0'
+          title-prefix: '[DD]'
+          exclude-noise: true
+          max-issues-per-run: 5

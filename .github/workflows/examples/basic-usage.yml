@@ -1,0 +1,22 @@
+name: Basic Datadog RUM Error Sync
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Daily at midnight UTC
+
+jobs:
+  sync-errors:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: wasabeef/datadog-to-github-issues/rum@v1
+        with:
+          datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
+          datadog-app-key: ${{ secrets.DATADOG_APP_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          service: 'your-service-name'
