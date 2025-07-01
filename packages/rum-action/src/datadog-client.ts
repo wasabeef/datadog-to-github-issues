@@ -62,6 +62,12 @@ export interface RUMError {
         city?: string;
       };
       context?: Record<string, any>;
+      issue?: {
+        id: string;
+        first_seen: number;
+        first_seen_version?: string;
+        age: number;
+      };
     };
   };
 }
